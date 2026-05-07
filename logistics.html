@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>後勤統計 — 遊戲片追貨平台</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f2f5;--surface:#fff;--surface2:#f7f8fa;
+  --border:#d8dde6;--text:#1a2030;--text2:#3d4a5c;--text3:#7a8699;
+  --accent:#1d6ef5;--accent-dim:#e8f0fe;
+  --green:#16a34a;--green-dim:#f0faf4;--green-b:#bbf7d0;
+  --red:#dc2626;--red-dim:#fef2f2;--red-b:#fecaca;
+  --amber:#d97706;--amber-dim:#fffbeb;--amber-b:#fde68a;
+  --font:'Noto Sans TC',sans-serif;--mono:'JetBrains Mono',monospace;
+  --radius:12px;--radius-sm:8px;--shadow:0 2px 8px rgba(0,0,0,0.07);
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+nav{background:#fff;border-bottom:2px solid var(--border);padding:0 1.5rem;height:64px;display:flex;align-items:center;gap:1rem;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
+.nav-logo{font-weight:900;font-size:1.1rem;display:flex;align-items:center;gap:8px}
+.nav-tag{font-size:0.82rem;background:var(--amber-dim);color:var(--amber);border:2px solid var(--amber-b);border-radius:20px;padding:4px 14px;font-weight:700}
+.nav-right{margin-left:auto;display:flex;gap:10px;align-items:center}
+.btn-sm{background:#fff;border:2px solid var(--border);color:var(--text2);border-radius:var(--radius-sm);padding:7px 16px;font-family:var(--font);font-size:0.9rem;font-weight:600;cursor:pointer}
+.btn-export{background:var(--green-dim);border:2px solid var(--green-b);color:var(--green);border-radius:var(--radius-sm);padding:7px 16px;font-family:var(--font);font-size:0.9rem;font-weight:700;cursor:pointer}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s infinite;margin-right:5px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.container{max-width:1200px;margin:0 auto;padding:1.5rem}
+
+/* WINDOW CARD */
+.window-card{background:#fff;border:2px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;box-shadow:var(--shadow)}
+.win-dot{width:12px;height:12px;border-radius:50%}
+.win-open{background:var(--green);box-shadow:0 0 0 4px rgba(22,163,74,0.15)}
+.win-closed{background:var(--amber)}
+.win-label{font-size:1rem;font-weight:700}
+.btn-toggle{padding:8px 18px;border-radius:var(--radius-sm);font-family:var(--font);font-size:0.9rem;font-weight:700;cursor:pointer;border:2px solid}
+.btn-close-win{background:var(--amber-dim);border-color:var(--amber-b);color:var(--amber)}
+.btn-open-win{background:var(--green-dim);border-color:var(--green-b);color:var(--green)}
+.btn-notify{background:var(--accent-dim);border:2px solid #bfcffe;color:var(--accent);border-radius:var(--radius-sm);padding:8px 18px;font-family:var(--font);font-size:0.9rem;font-weight:700;cursor:pointer;margin-left:auto}
+
+/* STAT CARDS */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.5rem}
+.stat-card{background:#fff;border:2px solid var(--border);border-radius:var(--radius);padding:1.25rem;box-shadow:var(--shadow)}
+.stat-label{font-size:0.82rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px}
+.stat-val{font-size:2rem;font-weight:900;font-family:var(--mono);line-height:1}
+.stat-sub{font-size:0.82rem;color:var(--text2);margin-top:6px}
+.c-green{color:var(--green)}.c-amber{color:var(--amber)}.c-red{color:var(--red)}.c-blue{color:var(--accent)}
+
+/* TOOLBAR */
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:1.2rem;flex-wrap:wrap}
+.search-box{background:#fff;border:2px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font);font-size:0.95rem;padding:8px 14px;outline:none;width:240px}
+.search-box:focus{border-color:var(--accent)}
+.filter-select{background:#fff;border:2px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font);font-size:0.9rem;padding:8px 12px;outline:none;cursor:pointer;-webkit-appearance:none;font-weight:500}
+
+/* TABLE */
+.tbl-wrap{background:#fff;border:2px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1.5rem;box-shadow:var(--shadow)}
+.tbl-header{padding:14px 18px;border-bottom:2px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surface2)}
+.tbl-title{font-size:1rem;font-weight:700}
+.tbl-count{font-size:0.82rem;color:var(--text2);background:#fff;border:1px solid var(--border);border-radius:10px;padding:3px 10px;font-weight:600}
+table{width:100%;border-collapse:collapse}
+th{font-size:0.78rem;font-weight:700;color:var(--text3);text-align:left;padding:10px 14px;letter-spacing:0.05em;text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--surface2);white-space:nowrap}
+td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:0.92rem;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface2)}
+.platform-tag{font-family:var(--mono);font-size:0.75rem;padding:3px 8px;border-radius:5px;font-weight:600;display:inline-block}
+.NS{color:#1d6ef5;background:#e8f0fe;border:1px solid #bfcffe}
+.PS5{color:#7c3aed;background:#f5f3ff;border:1px solid #ddd6fe}
+.vendor-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px}
+.vBNE{background:#1d6ef5}.vGS{background:#16a34a}.vSONY{background:#7c3aed}
+.num{font-family:var(--mono);font-weight:700}
+.moq-ok{color:var(--green)}.moq-low{color:var(--amber)}.moq-zero{color:var(--text3)}.moq-over{color:var(--red)}
+.gap-badge{font-size:0.78rem;padding:3px 10px;border-radius:6px;font-weight:700;white-space:nowrap;display:inline-block}
+.gap-need{background:var(--red-dim);color:var(--red);border:1px solid var(--red-b)}
+.gap-ok{background:var(--green-dim);color:var(--green);border:1px solid var(--green-b)}
+.gap-over{background:var(--amber-dim);color:var(--amber);border:1px solid var(--amber-b)}
+.gap-empty{background:var(--surface2);color:var(--text3);border:1px solid var(--border)}
+.dp{font-size:0.78rem;padding:2px 8px;border-radius:5px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);white-space:nowrap;display:inline-block;margin:2px 2px 2px 0}
+.dp.has-order{background:var(--green-dim);color:var(--green);border-color:var(--green-b);font-weight:600}
+.loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem;z-index:9999}
+.loading-spinner{width:40px;height:40px;border:4px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+.hidden{display:none!important}
+.toast{position:fixed;top:24px;right:24px;background:var(--green);color:#fff;padding:12px 20px;border-radius:var(--radius-sm);font-weight:700;font-size:0.95rem;z-index:9999;box-shadow:var(--shadow)}
+</style>
+</head>
+<body>
+<div class="loading-screen" id="loading-screen"><div class="loading-spinner"></div><p style="font-size:1rem;color:#3d4a5c;font-weight:500">連線中，請稍候…</p></div>
+<nav>
+  <div class="nav-logo"><span>📊</span> 遊戲片追貨平台</div>
+  <span class="nav-tag">後勤統計</span>
+  <span style="font-size:0.85rem;color:var(--text2);font-weight:500"><span class="live-dot"></span>即時同步</span>
+  <div class="nav-right">
+    <button class="btn-export" onclick="exportCSV()">匯出 CSV</button>
+    <button class="btn-sm" onclick="location.href='index.html'">登出</button>
+  </div>
+</nav>
+<div class="container">
+  <div class="window-card">
+    <div style="display:flex;align-items:center;gap:10px"><div class="win-dot" id="win-dot"></div><span class="win-label" id="win-text">—</span></div>
+    <span style="font-size:0.92rem;color:var(--text2);font-weight:500" id="win-week">—</span>
+    <button class="btn-toggle btn-close-win" id="win-toggle-btn" onclick="toggleWindow()">關閉收單視窗</button>
+    <span style="font-size:0.85rem;color:var(--text3)">關閉後經銷商無法修改訂單</span>
+    <button class="btn-notify" onclick="sendNotifications()">📧 發送 MOQ 缺口通知</button>
+  </div>
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">本週有訂單品項</div><div class="stat-val c-blue" id="st-items">—</div><div class="stat-sub">個品項</div></div>
+    <div class="stat-card"><div class="stat-label">合計訂購量</div><div class="stat-val c-green" id="st-qty">—</div><div class="stat-sub">件</div></div>
+    <div class="stat-card"><div class="stat-label">MOQ 不足</div><div class="stat-val c-red" id="st-moq">—</div><div class="stat-sub">個品項需確認</div></div>
+    <div class="stat-card"><div class="stat-label">已填單通路</div><div class="stat-val c-amber" id="st-dealers">—</div><div class="stat-sub">/ 全部通路</div></div>
+  </div>
+  <div class="toolbar">
+    <input class="search-box" placeholder="🔍  搜尋品名或料號…" oninput="applyFilter()" id="filter-text">
+    <select class="filter-select" id="filter-vendor" onchange="applyFilter()">
+      <option value="">全部代理商</option>
+      <option value="BNE">BNE（萬代南夢宮）</option>
+      <option value="GS">GSE（Game Source Entertainment）</option>
+      <option value="SONY">SONY</option>
+    </select>
+    <select class="filter-select" id="filter-moq" onchange="applyFilter()">
+      <option value="">全部狀態</option>
+      <option value="below">⚠️ MOQ 不足</option>
+      <option value="ok">✅ MOQ 達標</option>
+      <option value="over">🔴 超過上限</option>
+      <option value="zero">— 尚無訂單</option>
+    </select>
+  </div>
+  <div class="tbl-wrap">
+    <div class="tbl-header"><span class="tbl-title">全品項訂單彙整</span><span class="tbl-count" id="tbl-count">—</span></div>
+    <table><thead><tr>
+      <th style="width:55px">代理</th><th style="width:65px">平台</th><th>品名</th>
+      <th style="width:65px;text-align:right">MOQ</th><th style="width:85px;text-align:right">已登記</th>
+      <th style="width:90px;text-align:center">狀態</th><th style="width:60px;text-align:right">上限</th>
+      <th>各通路分布</th>
+    </tr></thead><tbody id="main-tbody"></tbody></table>
+  </div>
+  <div class="tbl-wrap">
+    <div class="tbl-header"><span class="tbl-title">通路訂單明細</span><span class="tbl-count" id="dealer-count">—</span></div>
+    <table><thead><tr>
+      <th>通路名稱</th><th>負責業務</th>
+      <th style="text-align:right">品項數</th><th style="text-align:right">合計數量</th><th style="width:120px">狀態</th>
+    </tr></thead><tbody id="dealer-tbody"></tbody></table>
+  </div>
+</div>
+<div class="toast hidden" id="toast"></div>
+<script>
+const FIREBASE_CONFIG={apiKey:"AIzaSyA-eDT7V7asiQ5ebGca-wBif8P-uW89_iQ",authDomain:"agm-tracking.firebaseapp.com",databaseURL:"https://agm-tracking-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"agm-tracking",storageBucket:"agm-tracking.firebasestorage.app",messagingSenderId:"91450833150",appId:"1:91450833150:web:79e5b01783be48ebff4daf"};
+let fbDB,allRows=[],dealers={},products={},orders={},winData={};
+window.addEventListener('DOMContentLoaded',async()=>{
+  if(sessionStorage.getItem('role')!=='logistics'){location.href='index.html';return;}
+  try{
+    if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
+    fbDB=firebase.database();
+    const[pSnap,dSnap]=await Promise.all([fbDB.ref('products').once('value'),fbDB.ref('dealers').once('value')]);
+    products=pSnap.val()||{};dealers=dSnap.val()||{};
+    fbDB.ref('window').on('value',snap=>{winData=snap.val()||{};renderWindowCtrl();});
+    fbDB.ref('orders').on('value',snap=>{orders=snap.val()||{};buildRows();renderMainTable(allRows);renderDealerTable();renderStats();});
+    document.getElementById('loading-screen').classList.add('hidden');
+  }catch(err){document.getElementById('loading-screen').innerHTML=`<div style="text-align:center;color:#dc2626;padding:2rem"><div style="font-size:3rem">⚠️</div><div style="font-size:1rem;font-weight:600;margin-top:1rem">${err.message}</div></div>`;}
+});
+function renderWindowCtrl(){
+  const open=winData.open!==false;
+  document.getElementById('win-dot').className='win-dot '+(open?'win-open':'win-closed');
+  document.getElementById('win-text').textContent='收單視窗：'+(open?'開放中':'已關閉');
+  document.getElementById('win-week').textContent='週次：'+(winData.week||'—');
+  const btn=document.getElementById('win-toggle-btn');
+  btn.textContent=open?'關閉收單視窗':'重新開放收單';
+  btn.className='btn-toggle '+(open?'btn-close-win':'btn-open-win');
+}
+async function toggleWindow(){await fbDB.ref('window').update({open:winData.open===false});showToast(winData.open===false?'收單視窗已開放':'收單視窗已關閉');}
+function buildRows(){
+  allRows=[];
+  Object.entries(products).forEach(([vendor,prods])=>{
+    Object.values(prods).forEach(p=>{
+      let total=0;const dealerQtys={};
+      Object.entries(orders).forEach(([did,dOrders])=>{const o=(dOrders||{})[p.id];if(o?.qty>0){total+=o.qty;dealerQtys[did]=o.qty;}});
+      let moqStatus='zero';
+      if(total>0&&total<p.moq)moqStatus='below';
+      else if(total>=p.moq)moqStatus=p.maxOrder&&total>p.maxOrder?'over':'ok';
+      allRows.push({vendor,p,total,dealerQtys,moqStatus});
+    });
+  });
+}
+function renderMainTable(rows){
+  document.getElementById('tbl-count').textContent=rows.length+' 品項';
+  document.getElementById('main-tbody').innerHTML=rows.map(({vendor,p,total,dealerQtys,moqStatus})=>{
+    const gap=total-p.moq;
+    const gapBadge={zero:`<span class="gap-badge gap-empty">無訂單</span>`,below:`<span class="gap-badge gap-need">缺 ${p.moq-total}</span>`,ok:`<span class="gap-badge gap-ok">達標 +${gap}</span>`,over:`<span class="gap-badge gap-over">超限 +${total-(p.maxOrder||0)}</span>`}[moqStatus]||'';
+    const dPills=Object.entries(dealerQtys).map(([did,qty])=>`<span class="dp has-order">${dealers[did]?.name||did} ×${qty}</span>`).join('');
+    return `<tr data-vendor="${vendor}" data-moq="${moqStatus}" data-name="${p.name.toLowerCase()} ${p.pn.toLowerCase()}">
+      <td><span class="vendor-dot v${vendor}"></span><strong>${vendor==='GS'?'GSE':vendor}</strong></td>
+      <td><span class="platform-tag ${p.platform}">${p.platform}</span></td>
+      <td><div style="font-weight:600;font-size:0.92rem">${p.name}</div><div style="font-size:0.78rem;font-family:var(--mono);color:var(--text3);margin-top:3px">${p.pn}</div></td>
+      <td style="text-align:right" class="num">${p.moq}</td>
+      <td style="text-align:right" class="num ${moqStatus==='zero'?'moq-zero':moqStatus==='below'?'moq-low':moqStatus==='over'?'moq-over':'moq-ok'}">${total}</td>
+      <td style="text-align:center">${gapBadge}</td>
+      <td style="text-align:right;color:var(--text3)" class="num">${p.maxOrder||'—'}</td>
+      <td>${dPills}</td>
+    </tr>`;
+  }).join('');
+}
+function renderDealerTable(){
+  const rows=Object.entries(dealers).map(([did,d])=>{
+    let items=0,qty=0,submitted=false;
+    Object.values(orders[did]||{}).forEach(o=>{if(o?.qty>0){items++;qty+=o.qty;}if(o?.submitted)submitted=true;});
+    return{did,d,items,qty,submitted};
+  }).sort((a,b)=>b.qty-a.qty);
+  document.getElementById('dealer-count').textContent=rows.filter(r=>r.items>0).length+' / '+rows.length+' 通路';
+  document.getElementById('dealer-tbody').innerHTML=rows.map(({d,items,qty,submitted})=>
+    `<tr><td><strong style="font-size:0.95rem">${d.name}</strong></td><td style="color:var(--text2)">${d.sales}</td>
+     <td style="text-align:right" class="num">${items||'—'}</td>
+     <td style="text-align:right" class="num" style="font-weight:${qty>0?'700':'400'};color:${qty>0?'var(--text)':'var(--text3)'}">${qty||'—'}</td>
+     <td>${submitted?'<span class="gap-badge gap-ok">已送出</span>':items>0?'<span class="gap-badge gap-need">填寫中</span>':'<span class="gap-badge gap-empty">未填單</span>'}</td>
+    </tr>`).join('');
+}
+function renderStats(){
+  let items=0,qty=0,moqLow=0,filled=0;
+  allRows.forEach(r=>{if(r.total>0){items++;qty+=r.total;}if(r.moqStatus==='below')moqLow++;});
+  Object.keys(dealers).forEach(did=>{if(Object.values(orders[did]||{}).some(o=>o?.qty>0))filled++;});
+  document.getElementById('st-items').textContent=items;
+  document.getElementById('st-qty').textContent=qty.toLocaleString();
+  document.getElementById('st-moq').textContent=moqLow;
+  document.getElementById('st-dealers').textContent=filled+' / '+Object.keys(dealers).length;
+}
+function applyFilter(){
+  const text=document.getElementById('filter-text').value.toLowerCase();
+  const ven=document.getElementById('filter-vendor').value;
+  const moq=document.getElementById('filter-moq').value;
+  renderMainTable(allRows.filter(r=>(!text||r.p.name.toLowerCase().includes(text)||r.p.pn.toLowerCase().includes(text))&&(!ven||r.vendor===ven)&&(!moq||r.moqStatus===moq)));
+}
+function exportCSV(){
+  const dids=Object.keys(dealers);
+  const rows=[['代理商','平台','料號','品名','MOQ','已登記','MOQ狀態',...dids.map(d=>dealers[d].name)].join(',')];
+  allRows.forEach(({vendor,p,total,dealerQtys,moqStatus})=>{
+    rows.push([vendor,p.platform,p.pn,`"${p.name}"`,p.moq,total,{zero:'無訂單',below:'未達MOQ',ok:'達標',over:'超過上限'}[moqStatus]||'',...dids.map(d=>dealerQtys[d]||0)].join(','));
+  });
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+rows.join('\n')],{type:'text/csv;charset=utf-8'}));a.download=`追貨表_${new Date().toISOString().slice(0,10)}.csv`;a.click();showToast('CSV 已匯出');
+}
+function sendNotifications(){
+  const below=allRows.filter(r=>r.moqStatus==='below');
+  if(!below.length){showToast('✓ 目前無 MOQ 不足品項');return;}
+  alert('【AGM 追貨通知】\n本週 MOQ 不足品項共 '+below.length+' 件：\n'+below.map(r=>`• ${r.p.name}（已登記 ${r.total}，MOQ ${r.p.moq}，缺 ${r.p.moq-r.total}）`).join('\n'));
+  showToast('通知內容已顯示');
+}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),2500);}
+</script>
+</body>
+</html>
