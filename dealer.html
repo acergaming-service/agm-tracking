@@ -63,11 +63,11 @@ nav{background:#fff;border-bottom:2px solid var(--border);padding:0 1.5rem;heigh
 /* ── PRODUCT TABLE ── */
 .prod-wrap{background:#fff;border:2px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow:hidden}
 .prod-thead{display:grid;grid-template-columns:72px 1fr 100px 100px 100px 70px 160px 90px;gap:0;padding:0;background:var(--surface2);border-bottom:2px solid var(--border2)}
-.prod-thead>*{padding:10px 12px;border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.prod-thead>*{padding:8px 12px;border-right:1px solid var(--border);text-align:center}
 .prod-thead>*:last-child{border-right:none}
 .prod-thead span{font-size:0.82rem;font-weight:900;color:var(--text);text-transform:uppercase;letter-spacing:0.04em;text-align:center}
-.prod-row{display:grid;grid-template-columns:72px 1fr 100px 100px 100px 70px 160px 90px;gap:0;align-items:center;padding:0;border-bottom:1px solid var(--border);transition:background 0.1s}
-.prod-row>*{padding:12px 12px;display:flex;align-items:center;justify-content:center}
+.prod-row{display:grid;grid-template-columns:72px 1fr 100px 100px 100px 70px 160px 90px;gap:0;align-items:stretch;padding:0;border-bottom:1px solid var(--border);transition:background 0.1s}
+.prod-row>*{padding:10px 12px;vertical-align:middle}
 .prod-row:last-child{border-bottom:none}
 .prod-row:hover{background:var(--surface2)}
 
@@ -526,10 +526,10 @@ function renderProducts(){
           </div>`:''}`;
         })()}
       </div>
-      <div style="font-family:var(--mono);font-size:0.92rem;font-weight:600;justify-content:flex-end">
+      <div style="text-align:right;font-family:var(--mono);font-size:0.92rem;font-weight:600;display:flex;align-items:center;justify-content:flex-end">
         NT$${p.srp?(p.srp).toLocaleString():'—'}
       </div>
-      <div style="font-family:var(--mono);font-size:0.92rem;font-weight:700;justify-content:flex-end">
+      <div style="text-align:right;font-family:var(--mono);font-size:0.92rem;font-weight:700;display:flex;align-items:center;justify-content:flex-end">
         ${(()=>{
           const _pm2=pmData[p.id]||{};
           const sp=_pm2.priceSpecial||p.priceSpecial||0;
@@ -537,31 +537,29 @@ function renderProducts(){
           return `NT$${p.priceTax?(p.priceTax).toLocaleString():'—'}`;
         })()}
       </div>
-      <div style="font-family:var(--mono);font-size:0.92rem;color:var(--text2);justify-content:flex-end">
+      <div style="text-align:right;font-family:var(--mono);font-size:0.92rem;color:var(--text2);display:flex;align-items:center;justify-content:flex-end">
         NT$${p.price?(p.price).toLocaleString():'—'}
       </div>
-      <div style="font-size:0.85rem;color:var(--text2);justify-content:flex-end">
+      <div style="text-align:right;font-size:0.85rem;color:var(--text2);display:flex;align-items:center;justify-content:flex-end">
         ${(()=>{
           if(!p.srp||!p.priceTax) return '—';
           const pct=Math.round(p.priceTax/p.srp*100);
           return pct+'%';
         })()}
       </div>
-      <div style="font-size:0.82rem;color:var(--text2);line-height:1.6;align-items:flex-start;justify-content:flex-start">
+      <div style="font-size:0.82rem;color:var(--text2);line-height:1.6;padding:10px 12px;display:flex;align-items:center">
         ${(()=>{
           const _pm3=pmData[p.id]||{};
-          const tag=_pm3.priceTag||p.priceTag||'';
           const note=_pm3.displayNote||p.displayNote||'';
           const gift=p.giftItem||'';
           const parts=[];
-          if(tag) parts.push(tag);
           if(note) parts.push(note);
           if(gift) parts.push('附贈：'+gift);
-          if(p.isAllocation) parts.push('分配出貨');
+          if(p.isAllocation) parts.push('⚠ 分配出貨');
           return parts.join('　');
         })()}
       </div>
-      <div class="qty-ctrl" style="justify-content:flex-end">
+      <div class="qty-ctrl" style="justify-content:center;padding:10px 12px">
         ${disabled
           ?`<span style="font-size:0.9rem;color:var(--text3);font-weight:600">${isWindowOpen?'不可訂':'已結算'}</span>`
           :`<input class="qty-input ${qty>0?'has-value':''}" type="number" min="0" value="${qty}"
@@ -575,8 +573,8 @@ function renderProducts(){
   document.getElementById('product-area').innerHTML=
     `<div class="prod-wrap">
       <div class="prod-thead">
-        <span style="text-align:center">平台</span>
-        <span style="text-align:left;align-items:flex-start !important">品名</span>
+        <span>平台</span>
+        <span style="text-align:left">品名</span>
         <span style="text-align:right">SRP<br><small style="font-weight:400;color:var(--text2);font-size:0.72rem">含稅</small></span>
         <span style="text-align:right">出貨價<br><small style="font-weight:400;color:var(--text2);font-size:0.72rem">含稅</small></span>
         <span style="text-align:right">出貨價<br><small style="font-weight:400;color:var(--text2);font-size:0.72rem">未稅</small></span>
