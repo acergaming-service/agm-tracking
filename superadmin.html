@@ -407,12 +407,22 @@ tr:hover td{background:var(--surface2)}
 
   <!-- ══ 週期設定 ══ -->
   <div id="tab-window" class="hidden">
-    <div class="add-form" style="max-width:600px">
+    <div class="add-form" style="max-width:700px">
       <h3>收單週期設定</h3>
-      <div class="form-grid" style="max-width:500px">
+      <p style="font-size:0.85rem;color:var(--text2);margin-bottom:1rem">設定後經銷商填單頁面頂部會顯示本週收單起始與截止時間</p>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr;max-width:660px">
         <div class="fg"><label>當週週次（例：2025-W20）</label><input id="wk-week" placeholder="2025-W20"></div>
         <div class="fg"><label>收單視窗狀態</label>
           <select id="wk-open"><option value="true">✅ 開放收單中</option><option value="false">⏸ 已關閉結算中</option></select></div>
+        <div class="fg"><label>📅 收單起始時間</label>
+          <input id="wk-start" type="datetime-local">
+          <small style="color:var(--text3);font-size:0.78rem">顯示於經銷商填單頁</small></div>
+        <div class="fg"><label>🔔 收單截止時間</label>
+          <input id="wk-end" type="datetime-local">
+          <small style="color:var(--text3);font-size:0.78rem">截止後建議關閉收單視窗</small></div>
+      </div>
+      <div id="wk-preview" style="margin:1rem 0;background:var(--accent-dim);border:1px solid #bfcffe;border-radius:8px;padding:0.75rem 1rem;font-size:0.88rem;color:var(--text2);display:none">
+        <strong style="color:var(--accent)">預覽：</strong> <span id="wk-preview-text"></span>
       </div>
       <button class="btn-primary" onclick="saveWindowSettings()">儲存設定</button>
     </div>
@@ -906,7 +916,24 @@ function exportLinksCSV(){
 }
 
 // ── 週期設定 ─────────────────────────────────────────────────────────────────
-function renderWindowForm(){ getEl('wk-week').value=winData.week||''; getEl('wk-open').value=String(winData.open!==false); renderWindowStatus(); }
+function renderWindowForm(){
+  getEl('wk-week').value=winData.week||'';
+  getEl('wk-open').value=String(winData.open!==false);
+  if(winData.startTime) getEl('wk-start').value=winData.startTime;
+  if(winData.endTime)   getEl('wk-end').value=winData.endTime;
+  renderWindowStatus();
+  updateWkPreview();
+}
+function updateWkPreview(){
+  const week=getVal('wk-week'),start=getVal('wk-start'),end=getVal('wk-end');
+  const prev=getEl('wk-preview'),prevTxt=getEl('wk-preview-text');
+  if(!prev) return;
+  if(week||start||end){
+    prev.style.display='block';
+    const fmt=v=>v?new Date(v).toLocaleString('zh-TW',{month:'numeric',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'}):'—';
+    prevTxt.textContent=(week?`週次：${week}  `:'')+(start?`開始：${fmt(start)}  `:'')+(end?`截止：${fmt(end)}`:'');
+  } else { prev.style.display='none'; }
+}
 function renderWindowStatus(){
   const open=winData.open!==false;
   const dot=getEl('win-dot'); if(dot){dot.className='win-dot '+(open?'win-open':'win-closed');}
@@ -915,7 +942,11 @@ function renderWindowStatus(){
 }
 async function saveWindowSettings(){
   const week=getVal('wk-week'),open=getVal('wk-open')==='true';
-  await fbDB.ref('window').update({week,open}); winData={...winData,week,open};
+  const startTime=getVal('wk-start')||'';
+  const endTime=getVal('wk-end')||'';
+  const updates={week,open,startTime,endTime};
+  await fbDB.ref('window').update(updates);
+  winData={...winData,...updates};
   renderWindowStatus(); showToast('週期設定已儲存','green');
 }
 

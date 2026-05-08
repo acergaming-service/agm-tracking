@@ -195,6 +195,19 @@ nav{background:#fff;border-bottom:2px solid var(--border);padding:0 1.5rem;heigh
     <p style="font-size:0.92rem;color:var(--text2)">系統正在進行本週結算，請等待下一個收單週期開放。</p>
   </div>
 
+  <!-- 收單時間提示 -->
+  <div id="window-time-banner" class="hidden" style="background:var(--green-dim);border:2px solid var(--green-b);border-radius:var(--radius);padding:1rem 1.5rem;margin-bottom:1.2rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:1.2rem">📅</span>
+      <span style="font-weight:700;font-size:0.95rem;color:var(--green)">本週收單時間</span>
+    </div>
+    <div style="display:flex;gap:1.5rem;flex-wrap:wrap;font-size:0.9rem;color:var(--text2)">
+      <span id="dealer-win-week" style="font-weight:600"></span>
+      <span id="dealer-win-start"></span>
+      <span id="dealer-win-end" style="color:var(--red);font-weight:600"></span>
+    </div>
+  </div>
+
   <!-- 大 Tab -->
   <div class="vendor-tabs" id="vendor-tabs"></div>
   <!-- 子 Tab -->
@@ -293,6 +306,8 @@ window.addEventListener('DOMContentLoaded', async()=>{
       isWindowOpen=w.open!==false;
       document.getElementById('nav-week').textContent=w.week||'';
       updateWindowUI();
+    updateWindowTimeBanner(winData);
+      updateWindowTimeBanner(w);
     });
     fbDB.ref(`orders/${DEALER_ID}`).on('value',snap=>{
       localOrders=snap.val()||{};
@@ -323,6 +338,25 @@ window.addEventListener('DOMContentLoaded', async()=>{
       </div>`;
   }
 });
+
+// ── 收單時間提示 ─────────────────────────────────────────────────────────
+function updateWindowTimeBanner(w){
+  const banner=document.getElementById('window-time-banner');
+  const fmtDT=v=>{
+    if(!v) return '';
+    const d=new Date(v);
+    return d.toLocaleString('zh-TW',{month:'numeric',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'});
+  };
+  const hasInfo=w.week||w.startTime||w.endTime;
+  if(!hasInfo){banner.classList.add('hidden');return;}
+  banner.classList.remove('hidden');
+  const weekEl=document.getElementById('dealer-win-week');
+  const startEl=document.getElementById('dealer-win-start');
+  const endEl=document.getElementById('dealer-win-end');
+  if(weekEl) weekEl.textContent=w.week?`週次：${w.week}`:'';
+  if(startEl) startEl.textContent=w.startTime?`開始：${fmtDT(w.startTime)}`:'';
+  if(endEl)   endEl.textContent=w.endTime?`📌 截止：${fmtDT(w.endTime)}`:'';
+}
 
 // ── 視窗狀態 ──────────────────────────────────────────────────────────────
 function updateWindowUI(){
@@ -442,7 +476,7 @@ function renderProducts(){
           </div>
           <div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
             ${arrival?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.85rem;font-weight:700;background:#d97706;color:#fff;padding:4px 12px;border-radius:6px">
-              📅 ${arrival}
+              📅 到貨日：${arrival}
             </span>`:''}
 
             ${p.isAllocation?`<span style="font-size:0.78rem;font-weight:700;background:var(--amber-dim);color:var(--amber);padding:2px 9px;border-radius:6px;border:1px solid var(--amber-b)">⚠ 分配出貨</span>`:''}
