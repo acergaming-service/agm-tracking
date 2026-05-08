@@ -165,7 +165,7 @@ tr:hover td{background:var(--surface2)}
   <div class="main-tabs">
     <button class="main-tab active" onclick="switchTab('overview',this)">📊 總覽</button>
     <button class="main-tab" onclick="switchTab('products',this)">📦 商品管理</button>
-    <button class="main-tab" onclick="switchTab('moq',this)">📋 MOQ 回填</button>
+    <button class="main-tab" onclick="switchTab('moq',this)">📋 向原廠追加下單</button>
     <button class="main-tab" onclick="switchTab('dealers',this)">🏪 通路管理</button>
     <button class="main-tab" onclick="switchTab('sales',this)">💼 業務管理</button>
     <button class="main-tab" onclick="switchTab('reports',this)">📑 報表匯出</button>
@@ -200,7 +200,7 @@ tr:hover td{background:var(--surface2)}
         <th style="width:50px">代理</th><th style="width:58px">平台</th><th>品名</th>
         <th style="width:68px;text-align:right">MOQ</th><th style="width:75px;text-align:right">已登記</th>
         <th style="width:85px">進度</th><th style="width:85px;text-align:center">狀態</th>
-        <th style="width:90px;text-align:right">向原廠下單</th><th style="width:85px;text-align:right">剩餘可用</th>
+        <th style="width:100px;text-align:right">本週追加量</th><th style="width:95px;text-align:right">可再追量</th>
         <th>通路分布</th>
       </tr></thead><tbody id="ov-tbody"></tbody></table>
     </div>
@@ -292,8 +292,8 @@ tr:hover td{background:var(--surface2)}
         <th style="width:45px">代理</th><th style="width:55px">平台</th><th style="width:65px">類型</th>
         <th>品名 / 條碼</th><th style="width:62px;text-align:right">MOQ</th>
         <th style="width:72px;text-align:right">已登記</th><th style="width:85px">進度</th>
-        <th style="width:100px;text-align:right">向原廠下單</th>
-        <th style="width:85px;text-align:right">剩餘可用</th>
+        <th style="width:110px;text-align:right">本週追加量</th>
+        <th style="width:95px;text-align:right">可再追量</th>
         <th style="width:120px">貨物狀態</th>
         <th style="width:125px">到貨日 / 發售日</th>
       </tr></thead><tbody id="moq-tbody"></tbody></table>
@@ -527,6 +527,21 @@ tr:hover td{background:var(--surface2)}
       <div class="fg"><label>上限（maxOrder，空白=無上限）</label><input id="ep-max" type="number" placeholder="—"></div>
       <div class="fg"><label>分配出貨</label>
         <select id="ep-alloc"><option value="false">否</option><option value="true">是（分配出貨）</option></select></div>
+      <div class="fg"><label>促銷標籤</label>
+        <select id="ep-price-tag">
+          <option value="">— 無</option>
+          <option value="特價">特價</option>
+          <option value="庫存出清">庫存出清</option>
+          <option value="買1送1">買1送1</option>
+          <option value="附贈品">附贈品</option>
+          <option value="4月優惠">4月優惠</option>
+          <option value="價格調整">價格調整</option>
+          <option value="免費升級PS5">免費升級PS5</option>
+        </select></div>
+      <div class="fg" style="grid-column:1/-1"><label>附贈品說明（選填）</label>
+        <input id="ep-gift" placeholder="例：預購特典 - 3D收藏卡"></div>
+      <div class="fg" style="grid-column:1/-1"><label>備註（前台顯示，選填）</label>
+        <input id="ep-display-note" placeholder="例：現庫出清，售完為止"></div>
     </div>
     <div style="display:flex;gap:10px;justify-content:flex-end">
       <button onclick="closeEditModal()" style="background:#fff;border:2px solid var(--border);color:var(--text2);border-radius:var(--radius-sm);padding:9px 22px;font-family:var(--font);font-size:0.92rem;font-weight:600;cursor:pointer">取消</button>
@@ -1176,6 +1191,7 @@ async function seedDB(){
   if(!confirm('這會覆蓋 Firebase 的產品資料，確定繼續？')) return;
   showToast('初始化中…請稍候','amber');
   // 直接把目前 products 物件重新寫入（或可在此放預設資料）
+  await fbDB.ref('products').remove();
   await fbDB.ref('products').set(products);
   showToast('✅ 資料庫已重新初始化','green');
 }
@@ -1198,6 +1214,9 @@ function openEditModal(vendor, pid){
   getEl('ep-moq').value=p.moq||0;
   getEl('ep-max').value=p.maxOrder||'';
   getEl('ep-alloc').value=String(p.isAllocation||false);
+  getEl('ep-price-tag').value=p.priceTag||'';
+  getEl('ep-gift').value=p.giftItem||'';
+  getEl('ep-display-note').value=p.displayNote||'';
   getEl('edit-modal').classList.remove('hidden');
 }
 function closeEditModal(){getEl('edit-modal').classList.add('hidden');}
@@ -1217,6 +1236,9 @@ async function saveEditModal(){
     moq:parseInt(getEl('ep-moq').value)||0,
     maxOrder:getEl('ep-max').value&&parseInt(getEl('ep-max').value)>0?parseInt(getEl('ep-max').value):0,
     isAllocation:getEl('ep-alloc').value==='true',
+    priceTag:getEl('ep-price-tag').value,
+    giftItem:getEl('ep-gift').value.trim(),
+    displayNote:getEl('ep-display-note').value.trim(),
   };
   if(!updates.name){alert('品名不能為空');return;}
   await fbDB.ref(`products/${vendor}/${pid}`).update(updates);
