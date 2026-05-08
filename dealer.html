@@ -230,6 +230,15 @@ nav{background:#fff;border-bottom:2px solid var(--border);padding:0 1.5rem;heigh
     <h2>確認送出訂單</h2>
     <p id="modal-info"></p>
     <div class="order-summary" id="modal-summary"></div>
+    <div style="margin-bottom:1.2rem">
+      <label style="font-size:0.88rem;font-weight:700;color:var(--text2);display:block;margin-bottom:6px">備註（選填）</label>
+      <textarea id="order-note" placeholder="例：請分批出貨 / 特殊包裝需求 / 其他說明…"
+        style="width:100%;background:#fff;border:2px solid var(--border);border-radius:var(--radius-sm);
+               color:var(--text);font-family:var(--font);font-size:0.92rem;padding:10px 12px;
+               outline:none;resize:vertical;min-height:80px;line-height:1.6"
+        onfocus="this.style.borderColor='var(--accent)'"
+        onblur="this.style.borderColor='var(--border)'"></textarea>
+    </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">返回修改</button>
       <button class="btn-confirm" onclick="submitOrder()">確認送出</button>
@@ -309,8 +318,18 @@ window.addEventListener('DOMContentLoaded', async()=>{
     updateWindowTimeBanner(winData);
       updateWindowTimeBanner(w);
     });
-    fbDB.ref(`orders/${DEALER_ID}`).on('value',snap=>{
-      localOrders=snap.val()||{};
+    // 監聽所有通路訂單，計算全域已登記量
+    fbDB.ref('orders').on('value',snap=>{
+      const allOrders=snap.val()||{};
+      // 計算每個品項的全域總量
+      window._globalTotals={};
+      Object.entries(allOrders).forEach(([did,dOrders])=>{
+        Object.entries(dOrders||{}).forEach(([pid,o])=>{
+          if(o?.qty>0) window._globalTotals[pid]=(window._globalTotals[pid]||0)+o.qty;
+        });
+      });
+      // 更新自己的訂單
+      localOrders=allOrders[DEALER_ID]||{};
       updateSummary(); renderVendorTabs(); renderSubTabs(); renderProducts();
     });
     fbDB.ref('pmData').on('value',snap=>{
@@ -479,7 +498,19 @@ function renderProducts(){
               📅 到貨日：${arrival}
             </span>`:''}
 
-            ${p.isAllocation?`<span style="font-size:0.78rem;font-weight:700;background:var(--amber-dim);color:var(--amber);padding:2px 9px;border-radius:6px;border:1px solid var(--amber-b)">⚠ 分配出貨</span>`:''}
+            ${p.isAllocation?`<span style="font-size:0.78rem;font-weight:700;background:var(--amber-dim);color:var(--amber);padding:2px 9px;border-radius:6px;border:1px solid var(--amber-b)">⚠ 分配出貨，數量由 AGM 決定</span>`:''}
+            ${(()=>{
+              if(!p.maxOrder) return '';
+              const gTotal=(window._globalTotals||{})[p.id]||0;
+              const over=gTotal>p.maxOrder;
+              const pct=Math.min(100,Math.round(gTotal/p.maxOrder*100));
+              const color=over?'var(--red)':pct>=80?'var(--amber)':'var(--green)';
+              return `<div style="margin-top:4px">
+                <span style="font-size:0.8rem;font-weight:700;color:${color};background:${over?'var(--red-dim)':pct>=80?'var(--amber-dim)':'var(--green-dim)'};padding:2px 9px;border-radius:6px;border:1px solid ${over?'var(--red-b)':pct>=80?'var(--amber-b)':'var(--green-b)'}">
+                  ${over?'🔴':'📊'} 全通路已登記 ${gTotal} / 上限 ${p.maxOrder} 件${over?' （已超量）':''}
+                </span>
+              </div>`;
+            })()}
           </div>
           ${p.barcode?`<div style="margin-top:5px">
             <span style="font-family:var(--mono);font-size:0.82rem;color:var(--text2);letter-spacing:0.04em"><span style="color:var(--text3)">國條:</span>${p.barcode}</span>
@@ -565,11 +596,14 @@ function showConfirm(){
   document.getElementById('modal-summary').innerHTML=orders.map(o=>
     `<div class="order-line"><span class="order-line-name">${o.prod.name}</span><span class="order-line-qty">× ${o.qty}</span></div>`
   ).join('');
+  const noteEl=document.getElementById('order-note');
+  if(noteEl) noteEl.value='';
   document.getElementById('confirm-modal').classList.remove('hidden');
 }
 function closeModal(){document.getElementById('confirm-modal').classList.add('hidden');}
 
 async function submitOrder(){
+  const note=document.getElementById('order-note')?.value?.trim()||'';
   closeModal();
   try{
     const ts=new Date().toISOString(),updates={};
@@ -579,6 +613,8 @@ async function submitOrder(){
         updates[`orders/${DEALER_ID}/${pid}/submittedAt`]=ts;
       }
     });
+    // 備註存在通路層級
+    if(note) updates[`orders/${DEALER_ID}/_note`]={text:note,submittedAt:ts};
     await fbDB.ref().update(updates);
     showToast('✓ 訂單已送出！後勤將於結算時匯整','green');
   }catch(e){showToast('送出失敗：'+e.message,'red');}
