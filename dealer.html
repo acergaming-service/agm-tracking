@@ -474,8 +474,8 @@ function renderProducts(){
     // 庫存不顯示給經銷商
     let stockHtml='';
 
-    // 優惠價（SONY）
-    const specialHtml=(isSONY&&p.priceSpecial&&p.priceSpecial!==p.price)?
+    // 優惠價（新出貨價）
+    const specialHtml=(p.priceSpecial&&p.priceSpecial>0&&p.priceSpecial!==p.price)?
       `<div class="price-special">優惠價 NT$${p.priceSpecial.toLocaleString()}</div>`:'';
 
     return `<div class="prod-row">
@@ -501,7 +501,21 @@ function renderProducts(){
             ${arrival?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.85rem;font-weight:700;background:#d97706;color:#fff;padding:4px 12px;border-radius:6px">
               📅 到貨日：${arrival}
             </span>`:''}
-
+            ${(()=>{
+              const tag=_pm.priceTag||p.priceTag||'';
+              if(!tag) return '';
+              const tagColors={
+                '特價優惠':'background:#dc2626;color:#fff',
+                '庫存出清':'background:#d97706;color:#fff',
+                '買1送1':'background:#7c3aed;color:#fff',
+                '附贈品':'background:#16a34a;color:#fff',
+                '4月優惠':'background:#dc2626;color:#fff',
+                '免費升級PS5':'background:#1d6ef5;color:#fff',
+                '價格調整':'background:#3d4a5c;color:#fff',
+              };
+              const style=tagColors[tag]||'background:#3d4a5c;color:#fff';
+              return `<span style="font-size:0.78rem;font-weight:700;${style};padding:2px 9px;border-radius:6px;display:inline-block">${tag}</span>`;
+            })()}
             ${p.isAllocation?`<span style="font-size:0.78rem;font-weight:700;background:var(--amber-dim);color:var(--amber);padding:2px 9px;border-radius:6px;border:1px solid var(--amber-b)">⚠ 分配出貨，數量由 AGM 決定</span>`:''}
             ${(()=>{
               if(!p.maxOrder||typeof p.maxOrder!=='number'||p.maxOrder<=0) return '';
@@ -520,6 +534,7 @@ function renderProducts(){
               </div>`;
             })()}
           </div>
+          ${(()=>{const note=_pm.displayNote||p.displayNote||'';return note?`<div style="margin-top:4px;font-size:0.8rem;color:var(--text2);font-style:italic">${note}</div>`:'';})()}
           ${p.barcode?`<div style="margin-top:5px">
             <span style="font-family:var(--mono);font-size:0.82rem;color:var(--text2);letter-spacing:0.04em"><span style="color:var(--text3)">國條:</span>${p.barcode}</span>
           </div>`:''}`;
