@@ -54,7 +54,7 @@ nav{background:#fff;border-bottom:2px solid var(--border);padding:0 1.5rem;heigh
 
 /* ── SUB TABS（類型 Tab）── */
 .sub-tab-bar{background:#fff;border-left:2px solid var(--border);border-right:2px solid var(--border);padding:12px 16px 0;display:flex;gap:6px;flex-wrap:wrap}
-.sub-tab{padding:7px 18px;border-radius:20px;font-size:0.88rem;font-weight:600;cursor:pointer;border:2px solid var(--border);background:var(--surface2);color:var(--text2);font-family:var(--font);transition:all 0.15s;margin-bottom:10px}
+.sub-tab{padding:7px 18px;border-radius:6px;font-size:0.88rem;font-weight:600;cursor:pointer;border:2px solid var(--border);background:var(--surface2);color:var(--text2);font-family:var(--font);transition:all 0.15s;margin-bottom:10px}
 .sub-tab:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
 .sub-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
 .sub-tab-badge{display:inline-block;background:rgba(255,255,255,0.3);border-radius:10px;padding:1px 6px;font-size:0.72rem;margin-left:4px}
@@ -62,9 +62,13 @@ nav{background:#fff;border-bottom:2px solid var(--border);padding:0 1.5rem;heigh
 
 /* ── PRODUCT TABLE ── */
 .prod-wrap{background:#fff;border:2px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow:hidden}
-.prod-thead{display:grid;grid-template-columns:72px 1fr 100px 100px 100px 80px 90px;gap:12px;padding:12px 18px;background:#e8edf5;border-bottom:2px solid var(--border2)}
+.prod-thead{display:grid;grid-template-columns:72px 1fr 100px 100px 100px 80px 90px;gap:0;padding:0;background:#fff;border-bottom:2px solid var(--border2)}
+.prod-thead>*{padding:10px 12px}
+.prod-thead>.price-zone{background:#eef0fb;border-left:2px solid #d0d8f0}
 .prod-thead span{font-size:0.82rem;font-weight:900;color:var(--text);text-transform:uppercase;letter-spacing:0.04em;text-align:center}
-.prod-row{display:grid;grid-template-columns:72px 1fr 100px 100px 100px 80px 90px;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);transition:background 0.1s}
+.prod-row{display:grid;grid-template-columns:72px 1fr 100px 100px 100px 80px 90px;gap:0;align-items:center;padding:0;border-bottom:1px solid var(--border);transition:background 0.1s}
+.prod-row>*{padding:14px 12px}
+.prod-row>.price-zone{background:#f7f8ff;border-left:2px solid #d0d8f0}
 .prod-row:last-child{border-bottom:none}
 .prod-row:hover{background:var(--surface2)}
 
@@ -523,10 +527,10 @@ function renderProducts(){
           </div>`:''}`;
         })()}
       </div>
-      <div style="text-align:right;font-family:var(--mono);font-size:0.92rem;font-weight:600">
+      <div class="price-zone" style="text-align:right;font-family:var(--mono);font-size:0.92rem;font-weight:600">
         NT$${p.srp?(p.srp).toLocaleString():'—'}
       </div>
-      <div style="text-align:right;font-family:var(--mono);font-size:0.92rem;font-weight:700">
+      <div class="price-zone" style="text-align:right;font-family:var(--mono);font-size:0.92rem;font-weight:700;border-left:1px solid #d0d8f0">
         ${(()=>{
           const _pm2=pmData[p.id]||{};
           const sp=_pm2.priceSpecial||p.priceSpecial||0;
@@ -534,17 +538,17 @@ function renderProducts(){
           return `NT$${p.priceTax?(p.priceTax).toLocaleString():'—'}`;
         })()}
       </div>
-      <div style="text-align:right;font-family:var(--mono);font-size:0.92rem;color:var(--text2)">
+      <div class="price-zone" style="text-align:right;font-family:var(--mono);font-size:0.92rem;color:var(--text2);border-left:1px solid #d0d8f0">
         NT$${p.price?(p.price).toLocaleString():'—'}
       </div>
-      <div style="text-align:right;font-size:0.85rem;color:var(--text2)">
+      <div class="price-zone" style="text-align:right;font-size:0.85rem;color:var(--text2);border-left:1px solid #d0d8f0">
         ${(()=>{
           if(!p.srp||!p.priceTax) return '—';
           const pct=Math.round(p.priceTax/p.srp*100);
           return pct+'%';
         })()}
       </div>
-      <div class="qty-ctrl">
+      <div class="qty-ctrl price-zone" style="border-left:1px solid #d0d8f0">
         ${disabled
           ?`<span style="font-size:0.9rem;color:var(--text3);font-weight:600">${isWindowOpen?'不可訂':'已結算'}</span>`
           :`<input class="qty-input ${qty>0?'has-value':''}" type="number" min="0" value="${qty}"
@@ -560,11 +564,11 @@ function renderProducts(){
       <div class="prod-thead">
         <span>平台</span>
         <span style="text-align:left">品名</span>
-        <span>SRP<br><small style="font-weight:400;color:var(--text2);font-size:0.72rem">含稅</small></span>
-        <span>出貨價<br><small style="font-weight:400;color:var(--text2);font-size:0.72rem">含稅</small></span>
-        <span>出貨價<br><small style="font-weight:400;color:var(--text2);font-size:0.72rem">未稅</small></span>
-        <span>折扣</span>
-        <span>訂購數量</span>
+        <span class="price-zone" style="text-align:right">SRP<br><small style="font-weight:400;color:var(--text2);font-size:0.72rem">含稅</small></span>
+        <span class="price-zone" style="text-align:right;border-left:1px solid #d0d8f0">出貨價<br><small style="font-weight:400;color:var(--text2);font-size:0.72rem">含稅</small></span>
+        <span class="price-zone" style="text-align:right;border-left:1px solid #d0d8f0">出貨價<br><small style="font-weight:400;color:var(--text2);font-size:0.72rem">未稅</small></span>
+        <span class="price-zone" style="text-align:right;border-left:1px solid #d0d8f0">折扣</span>
+        <span class="price-zone" style="text-align:right;border-left:1px solid #d0d8f0">訂購數量</span>
       </div>
       ${rows||`<div style="padding:2rem;text-align:center;color:var(--text3)">此分類目前無品項</div>`}
     </div>`;
