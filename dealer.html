@@ -429,10 +429,11 @@ function renderProducts(){
       <div>
         <div class="prod-name">${p.name}</div>
         ${(()=>{
-          const cfg=STATUS_CFG[p.status]||STATUS_CFG.available;
-          const pm=pmData[p.id]||{};
-          const arrival=pm.arrival||p.arrival||'';
-          const moqVal=pm.moq||p.moq||0;
+          const _pm=pmData[p.id]||{};
+          const _st=(_pm.status!==undefined&&_pm.status!==null?_pm.status:p.status)||'';
+          const cfg=STATUS_CFG[_st]||STATUS_CFG[''];
+          const arrival=_pm.arrival||p.arrival||'';
+          const moqVal=_pm.moq||p.moq||0;
           return `
           <div class="prod-meta" style="margin-top:5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             ${!arrival?`<span style="width:8px;height:8px;border-radius:50%;background:${cfg.dot};display:inline-block;flex-shrink:0"></span>

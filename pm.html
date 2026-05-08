@@ -248,15 +248,15 @@ tr:hover td{background:var(--surface2)}
     <div class="tbl-wrap">
       <div class="tbl-header"><span class="tbl-title">所有品項清單</span></div>
       <table><thead><tr>
-        <th style="width:50px">代理</th><th style="width:58px">平台</th><th style="width:70px">類型</th>
-        <th>品名</th>
-        <th style="width:110px">AGM P/N</th>
-        <th style="width:115px">國際條碼</th>
-        <th style="width:70px;text-align:right">SRP</th>
-        <th style="width:70px;text-align:right">出貨價</th>
-        <th style="width:60px;text-align:right">MOQ</th>
-        <th style="width:115px">狀態</th>
-        <th style="width:120px">到貨日</th>
+        <th style="width:50px">代理</th>
+        <th style="width:58px">平台</th>
+        <th style="width:70px">類型</th>
+        <th>品名 ／ AGM P/N ／ 國際條碼</th>
+        <th style="width:68px;text-align:right">SRP</th>
+        <th style="width:68px;text-align:right">出貨價</th>
+        <th style="width:62px;text-align:right">MOQ</th>
+        <th style="width:120px">狀態</th>
+        <th style="width:118px">到貨日</th>
         <th style="width:40px"></th>
       </tr></thead><tbody id="prod-tbody"></tbody></table>
     </div>
@@ -444,11 +444,11 @@ function renderProducts(){
       <td style="font-size:0.78rem;color:var(--text3)">${p.category||''}</td>
       <td>
         <div style="font-weight:700;font-size:0.9rem;line-height:1.3">${p.name}</div>
-        <div style="margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          ${p.pn&&p.pn!=='—'?`<span style="font-family:var(--mono);font-size:0.72rem;background:var(--accent-dim);color:var(--accent);padding:1px 6px;border-radius:4px;font-weight:600">AGM:${p.pn}</span>`:''}
+        <div style="margin-top:3px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          ${p.pn&&p.pn!=='—'?`<span style="font-family:var(--mono);font-size:0.72rem;background:var(--accent-dim);color:var(--accent);padding:1px 7px;border-radius:4px;font-weight:600">AGM: ${p.pn}</span>`:''}
           ${p.spec?`<span style="font-family:var(--mono);font-size:0.72rem;color:var(--text3)">${p.spec}</span>`:''}
-          ${p.barcode?`<span style="font-family:var(--mono);font-size:0.72rem;color:var(--text3)">國條:${p.barcode}</span>`:''}
-          ${p.isAllocation?`<span style="font-size:0.72rem;background:var(--amber-dim);color:var(--amber);padding:1px 6px;border-radius:4px;font-weight:700">⚠分配出貨</span>`:''}
+          ${p.barcode?`<span style="font-family:var(--mono);font-size:0.72rem;color:var(--text3)">國條: ${p.barcode}</span>`:''}
+          ${p.isAllocation?`<span style="font-size:0.72rem;background:var(--amber-dim);color:var(--amber);padding:1px 6px;border-radius:4px;font-weight:700">⚠ 分配出貨</span>`:''}
         </div>
       </td>
       <td style="text-align:right;font-family:var(--mono);font-size:0.85rem">${(p.srp||0).toLocaleString()}</td>
