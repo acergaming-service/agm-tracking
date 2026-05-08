@@ -1,669 +1,1234 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>通路填單 — 遊戲片追貨平台</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Super Admin — 遊戲片追貨平台</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#f0f2f5;--surface:#fff;--surface2:#f7f8fa;
-  --border:#d8dde6;--text:#1a2030;--text2:#3d4a5c;--text3:#7a8699;
+  --bg:#f0f2f5;--surface:#fff;--surface2:#f7f8fa;--border:#d8dde6;--border2:#b8c0cc;
+  --text:#1a2030;--text2:#3d4a5c;--text3:#7a8699;
   --accent:#1d6ef5;--accent-dim:#e8f0fe;
   --green:#16a34a;--green-dim:#f0faf4;--green-b:#bbf7d0;
   --red:#dc2626;--red-dim:#fef2f2;--red-b:#fecaca;
   --amber:#d97706;--amber-dim:#fffbeb;--amber-b:#fde68a;
-  --purple:#7c3aed;--purple-dim:#f5f3ff;
+  --purple:#7c3aed;--purple-dim:#f5f3ff;--purple-b:#ddd6fe;
+  --admin:#991b1b;--admin-dim:#fef2f2;
   --font:'Noto Sans TC',sans-serif;--mono:'JetBrains Mono',monospace;
   --radius:12px;--radius-sm:8px;--shadow:0 2px 8px rgba(0,0,0,0.07);
 }
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+nav{background:#1a0505;border-bottom:3px solid var(--red);padding:0 1.5rem;height:64px;display:flex;align-items:center;gap:1rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.3)}
+.nav-logo{font-weight:900;font-size:1.1rem;display:flex;align-items:center;gap:8px;color:#fff}
+.nav-tag{font-size:0.82rem;background:var(--red-dim);color:var(--red);border:2px solid var(--red-b);border-radius:20px;padding:4px 14px;font-weight:700}
+.nav-right{margin-left:auto;display:flex;gap:10px;align-items:center}
+.btn-sm{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:var(--radius-sm);padding:7px 16px;font-family:var(--font);font-size:0.9rem;font-weight:600;cursor:pointer}
+.btn-sm:hover{background:rgba(255,255,255,0.2)}
+.container{max-width:1400px;margin:0 auto;padding:1.5rem}
+.page-header{margin-bottom:1.5rem;padding:1rem 1.5rem;background:var(--red-dim);border:2px solid var(--red-b);border-radius:var(--radius)}
+.page-header h1{font-size:1.4rem;font-weight:900;color:var(--red);margin-bottom:4px}
+.page-header p{font-size:0.88rem;color:var(--text2)}
 
-/* NAV */
-nav{background:#fff;border-bottom:2px solid var(--border);padding:0 1.5rem;height:64px;display:flex;align-items:center;gap:1rem;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
-.nav-logo{font-weight:900;font-size:1.1rem;display:flex;align-items:center;gap:8px}
-.nav-pill{font-size:0.88rem;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 14px;color:var(--text2);font-weight:500}
-.nav-right{margin-left:auto;display:flex;align-items:center;gap:12px}
-.badge{font-size:0.82rem;padding:5px 14px;border-radius:20px;font-weight:700}
-.badge-green{background:var(--green-dim);color:var(--green);border:2px solid var(--green-b)}
-.badge-amber{background:var(--amber-dim);color:var(--amber);border:2px solid var(--amber-b)}
-.sync-ring{display:inline-block;width:10px;height:10px;border:2px solid transparent;border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;opacity:0;transition:opacity .2s}
-.sync-ring.show{opacity:1}
-@keyframes spin{to{transform:rotate(360deg)}}
+/* MAIN TABS */
+.main-tabs{display:flex;gap:6px;margin-bottom:1.5rem;flex-wrap:wrap;border-bottom:2px solid var(--border);padding-bottom:0}
+.main-tab{padding:10px 20px;font-size:0.92rem;font-weight:700;cursor:pointer;border:2px solid transparent;border-bottom:none;background:transparent;color:var(--text3);font-family:var(--font);border-radius:10px 10px 0 0;transition:all .15s;position:relative;bottom:-2px}
+.main-tab:hover{color:var(--text);background:var(--surface2)}
+.main-tab.active{background:#fff;border-color:var(--border);border-bottom-color:#fff;color:var(--red);font-weight:900}
 
-/* LAYOUT */
-.container{max-width:1100px;margin:0 auto;padding:1.5rem 1.5rem 100px}
-.page-header{margin-bottom:1.2rem}
-.page-header h1{font-size:1.6rem;font-weight:900;margin-bottom:4px}
-.page-header p{font-size:0.92rem;color:var(--text2)}
+/* FILTER BAR */
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.2rem;align-items:center}
+.filter-select{background:#fff;border:2px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font);font-size:0.9rem;padding:7px 12px;outline:none;cursor:pointer;-webkit-appearance:none}
+.filter-select:focus{border-color:var(--accent)}
+.filter-search{background:#fff;border:2px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font);font-size:0.9rem;padding:7px 12px;outline:none;width:240px}
+.filter-search:focus{border-color:var(--accent)}
+.filter-count{font-size:0.85rem;color:var(--text3);margin-left:auto;font-weight:600}
 
-/* WINDOW CLOSED */
-.window-closed{background:var(--amber-dim);border:2px solid var(--amber-b);border-radius:var(--radius);padding:1.5rem;text-align:center;margin-bottom:1.2rem}
-.window-closed h3{color:var(--amber);font-size:1.1rem;margin-bottom:6px}
-
-/* ── VENDOR TABS（大 Tab）── */
-.vendor-tabs{display:flex;gap:8px;margin-bottom:0;border-bottom:2px solid var(--border);padding-bottom:0}
-.vendor-tab{padding:10px 24px;font-size:1rem;font-weight:700;cursor:pointer;border:2px solid transparent;border-bottom:none;background:transparent;color:var(--text3);font-family:var(--font);border-radius:10px 10px 0 0;transition:all 0.15s;position:relative;bottom:-2px}
-.vendor-tab:hover{color:var(--text);background:var(--surface2)}
-.vendor-tab.active{background:#fff;border-color:var(--border);border-bottom-color:#fff;color:var(--accent)}
-.vtab-badge{display:inline-block;background:var(--accent-dim);color:var(--accent);border-radius:10px;padding:1px 7px;font-size:0.72rem;margin-left:5px;font-weight:700}
-.vendor-tab.active .vtab-badge{background:var(--accent);color:#fff}
-
-/* ── SUB TABS（類型 Tab）── */
-.sub-tab-bar{background:#fff;border-left:2px solid var(--border);border-right:2px solid var(--border);padding:12px 16px 0;display:flex;gap:6px;flex-wrap:wrap}
-.sub-tab{padding:7px 18px;border-radius:20px;font-size:0.88rem;font-weight:600;cursor:pointer;border:2px solid var(--border);background:var(--surface2);color:var(--text2);font-family:var(--font);transition:all 0.15s;margin-bottom:10px}
-.sub-tab:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
-.sub-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
-.sub-tab-badge{display:inline-block;background:rgba(255,255,255,0.3);border-radius:10px;padding:1px 6px;font-size:0.72rem;margin-left:4px}
-.sub-tab:not(.active) .sub-tab-badge{background:var(--accent-dim);color:var(--accent)}
-
-/* ── PRODUCT TABLE ── */
-.prod-wrap{background:#fff;border:2px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow:hidden}
-.prod-thead{display:grid;grid-template-columns:90px 1fr 120px 170px;gap:12px;padding:10px 18px;background:var(--surface2);border-bottom:1px solid var(--border)}
-.prod-thead span{font-size:0.78rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em}
-.prod-row{display:grid;grid-template-columns:90px 1fr 120px 170px;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);transition:background 0.1s}
-.prod-row:last-child{border-bottom:none}
-.prod-row:hover{background:var(--surface2)}
-
-/* 平台標籤 */
-.platform-tag{font-family:var(--mono);font-size:0.78rem;padding:4px 10px;border-radius:6px;font-weight:700;display:inline-block;text-align:center}
+/* TABLE */
+.tbl-wrap{background:#fff;border:2px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1.5rem;box-shadow:var(--shadow)}
+.tbl-header{padding:12px 16px;border-bottom:2px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surface2);flex-wrap:wrap;gap:8px}
+.tbl-title{font-size:1rem;font-weight:700}
+table{width:100%;border-collapse:collapse}
+th{font-size:0.72rem;font-weight:700;color:var(--text3);text-align:left;padding:8px 10px;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border);background:var(--surface2);white-space:nowrap}
+td{padding:6px 10px;border-bottom:1px solid var(--border);font-size:0.85rem;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface2)}
+.platform-tag{font-family:var(--mono);font-size:0.68rem;padding:2px 6px;border-radius:4px;font-weight:700;display:inline-block;white-space:nowrap}
 .NS{color:#1d6ef5;background:#e8f0fe;border:1px solid #bfcffe}
 .NS2{color:#0d47a1;background:#dce5ff;border:1px solid #9ab0ff}
 .PS5{color:#7c3aed;background:#f5f3ff;border:1px solid #ddd6fe}
 .PS4{color:#059669;background:#ecfdf5;border:1px solid #a7f3d0}
 .VR{color:#dc2626;background:#fef2f2;border:1px solid #fecaca}
 
-/* 分配出貨標籤 */
-.alloc-tag{font-size:0.75rem;padding:3px 8px;border-radius:5px;background:var(--amber-dim);color:var(--amber);border:1px solid var(--amber-b);font-weight:700;display:inline-block;margin-left:6px}
+/* INLINE INPUTS */
+.inline-num{width:72px;background:#fff;border:2px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:0.88rem;font-weight:600;text-align:right;padding:3px 6px;outline:none}
+.inline-num:focus{border-color:var(--accent)}
+.inline-num.filled{border-color:var(--green);background:var(--green-dim)}
+.inline-text{background:#fff;border:2px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font);font-size:0.85rem;padding:3px 7px;outline:none;width:120px}
+.inline-text:focus{border-color:var(--accent)}
+.inline-text.filled{border-color:var(--amber);background:var(--amber-dim)}
+.inline-select{background:#fff;border:2px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font);font-size:0.82rem;font-weight:600;padding:3px 7px;outline:none;-webkit-appearance:none;cursor:pointer}
+.inline-select:focus{border-color:var(--accent)}
 
-/* 品名區 */
-.prod-name{font-size:0.95rem;font-weight:700;margin-bottom:5px;line-height:1.3}
-.prod-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
-.dot-available{background:var(--green)}.dot-incoming{background:var(--amber)}
-.dot-preorder{background:var(--accent)}.dot-delayed{background:var(--red)}.dot-unavailable{background:var(--text3)}
-.prod-pn{font-family:var(--mono);font-size:0.75rem;color:var(--text3)}
-.prod-status{font-size:0.82rem;color:var(--text2)}
+/* STATUS */
+.s-empty{background:#f3f4f6;color:var(--text3);border-color:var(--border)}
+.s-available{background:var(--surface2);color:var(--text2);border-color:var(--border2)}
+.s-instock{background:var(--green-dim);color:var(--green);border-color:var(--green-b)}
+.s-incoming{background:var(--accent-dim);color:var(--accent);border-color:#bfcffe}
+.s-limited{background:var(--amber-dim);color:var(--amber);border-color:var(--amber-b)}
+.s-tbc{background:var(--amber-dim);color:var(--amber);border-color:var(--amber-b)}
+.s-unavailable{background:var(--red-dim);color:var(--red);border-color:var(--red-b)}
+.s-clearance{background:var(--purple-dim);color:var(--purple);border-color:var(--purple-b)}
+.s-delayed{background:var(--red-dim);color:var(--red);border-color:var(--red-b)}
+.s-preorder{background:var(--accent-dim);color:var(--accent);border-color:#bfcffe}
 
-/* 到貨日期（重點顯示）*/
-.arrival-tag{display:inline-flex;align-items:center;gap:4px;font-size:0.82rem;font-weight:700;color:#fff;background:var(--amber);padding:3px 10px;border-radius:6px;margin-top:5px}
-.arrival-tag svg{flex-shrink:0}
+.moq-ok{color:var(--green);font-weight:700}.moq-low{color:var(--amber);font-weight:700}
+.moq-zero{color:var(--text3)}.moq-over{color:var(--red);font-weight:700}
+.gap-badge{font-size:0.72rem;padding:2px 8px;border-radius:5px;font-weight:700;white-space:nowrap;display:inline-block}
+.gap-need{background:var(--red-dim);color:var(--red);border:1px solid var(--red-b)}
+.gap-ok{background:var(--green-dim);color:var(--green);border:1px solid var(--green-b)}
+.gap-over{background:var(--amber-dim);color:var(--amber);border:1px solid var(--amber-b)}
+.gap-empty{background:var(--surface2);color:var(--text3);border:1px solid var(--border)}
+.dp{font-size:0.68rem;padding:1px 6px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);display:inline-block;margin:1px}
+.dp.has-order{background:var(--green-dim);color:var(--green);border-color:var(--green-b);font-weight:600}
 
-/* 庫存量顯示（SONY 專用）*/
-.stock-tag{font-size:0.8rem;font-weight:700;padding:2px 8px;border-radius:5px;display:inline-block}
-.stock-ok{background:var(--green-dim);color:var(--green);border:1px solid var(--green-b)}
-.stock-low{background:var(--amber-dim);color:var(--amber);border:1px solid var(--amber-b)}
-.stock-none{background:#f3f4f6;color:var(--text3);border:1px solid var(--border)}
+/* FORM */
+.add-form{background:#fff;border:2px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.5rem;box-shadow:var(--shadow)}
+.add-form h3{font-size:1rem;font-weight:700;margin-bottom:1rem;color:var(--text2)}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin-bottom:1.2rem}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:0.78rem;font-weight:700;color:var(--text3)}
+.fg input,.fg select{background:#fff;border:2px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font);font-size:0.9rem;padding:7px 10px;outline:none;-webkit-appearance:none}
+.fg input:focus,.fg select:focus{border-color:var(--accent)}
+.btn-primary{background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 20px;font-family:var(--font);font-size:0.9rem;font-weight:700;cursor:pointer}
+.btn-danger{background:var(--red-dim);color:var(--red);border:2px solid var(--red-b);border-radius:var(--radius-sm);padding:8px 20px;font-family:var(--font);font-size:0.9rem;font-weight:700;cursor:pointer}
+.btn-success{background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 20px;font-family:var(--font);font-size:0.9rem;font-weight:700;cursor:pointer}
+.btn-export{background:var(--green-dim);border:2px solid var(--green-b);color:var(--green);border-radius:var(--radius-sm);padding:6px 14px;font-family:var(--font);font-size:0.85rem;font-weight:700;cursor:pointer}
+.btn-del{background:#fff;border:2px solid var(--red-b);color:var(--red);cursor:pointer;font-size:0.8rem;padding:2px 8px;border-radius:5px;font-weight:700}
+.btn-del:hover{background:var(--red-dim)}
 
-/* 價格欄 */
-.price-col{text-align:right}
-.price-main{font-size:1rem;font-weight:700;font-family:var(--mono);color:var(--text)}
-.price-srp{font-size:0.78rem;color:var(--text3);margin-top:2px}
-.price-special{font-size:0.78rem;color:var(--green);font-weight:600;margin-top:2px}
+/* IMPORT ZONE */
+.import-zone{border:3px dashed var(--border);border-radius:var(--radius);padding:2rem;text-align:center;cursor:pointer;transition:all .2s;background:#fff;margin-bottom:1rem}
+.import-zone:hover,.import-zone.dragover{border-color:var(--accent);background:var(--accent-dim)}
+.import-zone p{font-size:1rem;color:var(--text2);font-weight:500}
+.import-zone small{font-size:0.82rem;color:var(--text3)}
+#import-file{display:none}
 
-/* 數量控制 */
-.qty-ctrl{display:flex;align-items:center;gap:8px;justify-content:flex-end}
-.qty-btn{width:36px;height:36px;background:#fff;border:2px solid var(--border);border-radius:8px;color:var(--text);font-size:1.2rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0}
-.qty-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
-.qty-input{width:60px;background:#fff;border:2px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:1.05rem;font-weight:600;text-align:center;padding:6px 4px;outline:none;transition:all 0.15s}
-.qty-input:focus{border-color:var(--accent)}
-.qty-input.has-value{border-color:var(--green);background:var(--green-dim);color:var(--green)}
+/* STAT CARDS */
+.stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:1.5rem}
+.stat-card{background:#fff;border:2px solid var(--border);border-radius:var(--radius);padding:1rem;box-shadow:var(--shadow)}
+.stat-label{font-size:0.72rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px}
+.stat-val{font-size:1.6rem;font-weight:900;font-family:var(--mono)}
+.c-green{color:var(--green)}.c-amber{color:var(--amber)}.c-red{color:var(--red)}.c-blue{color:var(--accent)}.c-purple{color:var(--purple)}
 
-/* SUMMARY BAR */
-.summary-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid var(--border);padding:1rem 2rem;display:flex;align-items:center;gap:2rem;z-index:200;box-shadow:0 -4px 16px rgba(0,0,0,0.08)}
-.sum-item{display:flex;flex-direction:column;gap:3px}
-.sum-label{font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600}
-.sum-value{font-size:1.2rem;font-weight:900;font-family:var(--mono)}
-.sum-sep{width:1px;height:36px;background:var(--border)}
-.btn-submit{margin-left:auto;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);padding:0.8rem 2rem;font-family:var(--font);font-size:1.05rem;font-weight:700;cursor:pointer;transition:opacity 0.15s}
-.btn-submit:hover{opacity:0.88}
-.btn-submit:disabled{opacity:0.4;cursor:not-allowed}
+/* PROG */
+.prog-wrap{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;width:72px;border:1px solid var(--border)}
+.prog-bar{height:100%;border-radius:3px;transition:width .3s}
+.prog-ok{background:var(--green)}.prog-low{background:var(--amber)}.prog-zero{background:#d8dde6}
 
-/* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem}
-.modal{background:#fff;border-radius:var(--radius);padding:2rem;width:100%;max-width:500px;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
-.modal h2{font-size:1.3rem;font-weight:900;margin-bottom:8px}
-.modal p{font-size:0.95rem;color:var(--text2);margin-bottom:1.5rem}
-.order-summary{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1.5rem;max-height:300px;overflow-y:auto}
-.order-line{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.9rem;gap:10px}
-.order-line:last-child{border-bottom:none}
-.order-line-name{color:var(--text2);flex:1}
-.order-line-qty{font-family:var(--mono);font-weight:700}
-.modal-actions{display:flex;gap:10px}
-.btn-cancel{flex:1;background:#fff;border:2px solid var(--border);color:var(--text2);border-radius:var(--radius-sm);padding:0.75rem;font-family:var(--font);font-size:0.95rem;font-weight:600;cursor:pointer}
-.btn-confirm{flex:2;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);padding:0.75rem;font-family:var(--font);font-size:0.95rem;font-weight:700;cursor:pointer}
-
-/* LOADING */
+.win-dot{width:10px;height:10px;border-radius:50%}
+.win-open{background:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.2)}
+.win-closed{background:var(--amber)}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s infinite;margin-right:4px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes spin{to{transform:rotate(360deg)}}
 .loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem;z-index:9999}
-.loading-spinner{width:40px;height:40px;border:4px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
-
-.search-highlight{background:#fef08a;border-radius:2px;padding:0 2px}
+.loading-spinner{width:40px;height:40px;border:4px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite}
 .hidden{display:none!important}
 .toast{position:fixed;top:24px;right:24px;padding:12px 20px;border-radius:var(--radius-sm);font-weight:700;font-size:0.95rem;z-index:9999;box-shadow:var(--shadow)}
 .toast-green{background:var(--green);color:#fff}
-.toast-amber{background:var(--amber);color:#fff}
 .toast-red{background:var(--red);color:#fff}
+.toast-amber{background:var(--amber);color:#fff}
 </style>
 </head>
 <body>
-
-<div class="loading-screen" id="loading-screen">
-  <div class="loading-spinner"></div>
-  <p style="font-size:1rem;color:var(--text2);font-weight:500">連線中，請稍候…</p>
-</div>
+<div class="loading-screen" id="loading-screen"><div class="loading-spinner"></div><p style="font-size:1rem;color:var(--text2);font-weight:500">連線中…</p></div>
 
 <nav>
-  <div class="nav-logo"><span>🎮</span> 遊戲片追貨平台</div>
-  <div class="nav-pill" id="nav-dealer">—</div>
-  <div class="nav-pill" id="nav-week">—</div>
+  <div class="nav-logo"><span>🔑</span> Super Admin — 遊戲片追貨平台</div>
+  <span class="nav-tag">上帝模式</span>
+  <span style="font-size:0.82rem;color:rgba(255,255,255,0.6);font-weight:500"><span class="live-dot"></span>Firebase 即時同步</span>
   <div class="nav-right">
-    <span class="sync-ring" id="saving-ring"></span>
-    <span class="badge badge-green" id="window-badge">收單中</span>
+    <button class="btn-sm" onclick="location.href='index.html'">登出</button>
   </div>
 </nav>
 
 <div class="container">
   <div class="page-header">
-    <h1 id="page-title">遊戲片訂購登記</h1>
-    <p>數量填寫後自動同步雲端，不需另外按儲存</p>
+    <h1>🔑 Super Admin 控制面板</h1>
+    <p>完整系統管理權限 — 商品、通路、業務、MOQ、報表、系統設定</p>
   </div>
 
-  <!-- 搜尋列 -->
-  <div style="margin-bottom:1.2rem;display:flex;align-items:center;gap:10px">
-    <div style="position:relative;flex:1;max-width:400px">
-      <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:1rem;color:var(--text3)">🔍</span>
-      <input id="search-input" type="text" placeholder="搜尋品名或國際條碼…"
-        style="width:100%;padding:10px 14px 10px 38px;font-size:0.95rem;font-family:var(--font);
-               border:2px solid var(--border);border-radius:var(--radius-sm);background:#fff;
-               color:var(--text);outline:none"
-        oninput="onSearch(this.value)"
-        onfocus="this.style.borderColor='var(--accent)'"
-        onblur="this.style.borderColor='var(--border)'">
+  <!-- MAIN TABS -->
+  <div class="main-tabs">
+    <button class="main-tab active" onclick="switchTab('overview',this)">📊 總覽</button>
+    <button class="main-tab" onclick="switchTab('products',this)">📦 商品管理</button>
+    <button class="main-tab" onclick="switchTab('moq',this)">📋 MOQ 回填</button>
+    <button class="main-tab" onclick="switchTab('dealers',this)">🏪 通路管理</button>
+    <button class="main-tab" onclick="switchTab('sales',this)">💼 業務管理</button>
+    <button class="main-tab" onclick="switchTab('reports',this)">📑 報表匯出</button>
+    <button class="main-tab" onclick="switchTab('links',this)">🔗 通路連結</button>
+    <button class="main-tab" onclick="switchTab('window',this)">📅 週期設定</button>
+    <button class="main-tab" onclick="switchTab('system',this)">⚙️ 系統設定</button>
+  </div>
+
+  <!-- ══ 總覽 ══ -->
+  <div id="tab-overview">
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">品項總數</div><div class="stat-val c-blue" id="ov-prods">—</div></div>
+      <div class="stat-card"><div class="stat-label">本週有訂單</div><div class="stat-val c-green" id="ov-orders">—</div></div>
+      <div class="stat-card"><div class="stat-label">MOQ 不足</div><div class="stat-val c-red" id="ov-moq">—</div></div>
+      <div class="stat-card"><div class="stat-label">已填單通路</div><div class="stat-val c-amber" id="ov-dealers">—</div></div>
+      <div class="stat-card"><div class="stat-label">收單狀態</div><div class="stat-val c-purple" id="ov-window">—</div></div>
     </div>
-    <button onclick="clearSearch()" id="clear-search-btn"
-      style="display:none;padding:8px 14px;border:2px solid var(--border);border-radius:var(--radius-sm);
-             background:#fff;color:var(--text2);font-family:var(--font);font-size:0.88rem;font-weight:600;cursor:pointer">
-      清除
-    </button>
-  </div>
-
-  <div id="window-closed-banner" class="window-closed hidden">
-    <h3>⏸ 本週收單視窗已關閉</h3>
-    <p style="font-size:0.92rem;color:var(--text2)">系統正在進行本週結算，請等待下一個收單週期開放。</p>
-  </div>
-
-  <!-- 收單時間提示 -->
-  <div id="window-time-banner" class="hidden" style="background:var(--green-dim);border:2px solid var(--green-b);border-radius:var(--radius);padding:1rem 1.5rem;margin-bottom:1.2rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">
-    <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:1.2rem">📅</span>
-      <span style="font-weight:700;font-size:0.95rem;color:var(--green)">本週收單時間</span>
+    <!-- 全品項彙整 -->
+    <div class="filter-bar">
+      <select class="filter-select" id="ov-vendor" onchange="renderOverview()"><option value="">全部代理商</option><option value="BNE">BNE</option><option value="GS">GSE</option><option value="SONY">SONY</option></select>
+      <select class="filter-select" id="ov-moq-filter" onchange="renderOverview()">
+        <option value="">全部狀態</option><option value="below">⚠ MOQ 不足</option><option value="ok">✅ 達標</option><option value="over">🔴 超量</option><option value="zero">— 無訂單</option>
+      </select>
+      <span class="filter-count" id="ov-count">—</span>
     </div>
-    <div style="display:flex;gap:1.5rem;flex-wrap:wrap;font-size:0.9rem;color:var(--text2)">
-      <span id="dealer-win-week" style="font-weight:600"></span>
-      <span id="dealer-win-start"></span>
-      <span id="dealer-win-end" style="color:var(--red);font-weight:600"></span>
+    <div class="tbl-wrap">
+      <div class="tbl-header">
+        <span class="tbl-title">全品項訂單總覽</span>
+        <span style="font-size:0.82rem;color:var(--text2);margin-left:auto"><span class="live-dot"></span>即時更新</span>
+      </div>
+      <table><thead><tr>
+        <th style="width:50px">代理</th><th style="width:58px">平台</th><th>品名</th>
+        <th style="width:68px;text-align:right">MOQ</th><th style="width:75px;text-align:right">已登記</th>
+        <th style="width:85px">進度</th><th style="width:85px;text-align:center">狀態</th>
+        <th style="width:90px;text-align:right">向原廠下單</th><th style="width:85px;text-align:right">剩餘可用</th>
+        <th>通路分布</th>
+      </tr></thead><tbody id="ov-tbody"></tbody></table>
     </div>
   </div>
 
-  <!-- 大 Tab -->
-  <div class="vendor-tabs" id="vendor-tabs"></div>
-  <!-- 子 Tab -->
-  <div class="sub-tab-bar" id="sub-tabs"></div>
-  <!-- 產品列表 -->
-  <div id="product-area"></div>
+  <!-- ══ 商品管理 ══ -->
+  <div id="tab-products" class="hidden">
+    <!-- 批次匯入 -->
+    <div class="add-form">
+      <h3>批次匯入產品（CSV 格式）</h3>
+      <p style="font-size:0.88rem;color:var(--text2);margin-bottom:1rem;line-height:1.7">
+        CSV 欄位順序：<code style="font-family:var(--mono);background:var(--surface2);padding:2px 8px;border-radius:4px;font-size:0.82rem">代理商,平台,類型,AGBS P/N,國際條碼,中文品名,規格,SRP,出貨價(未稅),優惠出貨價,MOQ,到貨日,狀態,分配出貨(true/false)</code>
+      </p>
+      <div class="import-zone" onclick="document.getElementById('import-file').click()" id="import-zone">
+        <p>📁 點擊或拖曳 CSV 檔案到此處</p>
+        <small>第一列為標題列，系統自動跳過 • 支援 UTF-8 及 BOM 格式</small>
+      </div>
+      <input type="file" id="import-file" accept=".csv" onchange="handleImportFile(this)">
+      <div id="import-preview" class="hidden">
+        <div style="margin-bottom:1rem;padding:1rem;background:var(--surface2);border-radius:var(--radius-sm);font-size:0.88rem">
+          <span id="import-summary" style="font-weight:600"></span>
+        </div>
+        <div style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:1rem">
+          <table style="width:100%;border-collapse:collapse" id="import-preview-table"></table>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn-primary" onclick="confirmImport()">✓ 確認匯入</button>
+          <button class="btn-danger" onclick="cancelImport()">✕ 取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新增品項表單 -->
+    <div class="add-form">
+      <h3>手動新增品項</h3>
+      <div class="form-grid">
+        <div class="fg"><label>代理商</label><select id="np-vendor"><option value="BNE">BNE</option><option value="GS">GSE</option><option value="SONY">SONY</option></select></div>
+        <div class="fg"><label>平台</label><select id="np-platform"><option>NS</option><option>NS2</option><option>PS5</option><option>PS4</option><option>VR</option></select></div>
+        <div class="fg"><label>類型</label><select id="np-category"><option>軟體</option><option>主機</option><option>周邊</option><option>女性向</option><option>誠翼</option><option>OLP</option><option>PS4 HITS</option><option>SEGA</option><option>VR</option><option>軟體(三廠)</option></select></div>
+        <div class="fg"><label>AGBS P/N</label><input id="np-pn" placeholder="ZL.A00TZ.XXX"></div>
+        <div class="fg"><label>國際條碼 (EAN)</label><input id="np-barcode" placeholder="4713014XXXXXX"></div>
+        <div class="fg"><label>中文品名</label><input id="np-name"></div>
+        <div class="fg"><label>規格 / 型號</label><input id="np-spec" placeholder="CFI-XXXX"></div>
+        <div class="fg"><label>SRP（含稅）</label><input id="np-srp" type="number" placeholder="1490"></div>
+        <div class="fg"><label>出貨價（未稅）</label><input id="np-price" type="number" placeholder="933"></div>
+        <div class="fg"><label>優惠出貨價</label><input id="np-price-special" type="number" placeholder=""></div>
+        <div class="fg"><label>MOQ</label><input id="np-moq" type="number" placeholder="0"></div>
+        <div class="fg"><label>到貨日 / 發售日</label><input id="np-arrival" placeholder="2025/7/24"></div>
+        <div class="fg"><label>貨物狀態</label><select id="np-status"><option value="">— 未設定</option><option value="instock">現庫可出</option><option value="incoming">即將到貨</option><option value="limited">限量出完為止</option><option value="tbc">確認供貨中</option><option value="available">可追貨</option><option value="unavailable">無法供應</option><option value="clearance">專案出清</option></select></div>
+        <div class="fg"><label>分配出貨</label><select id="np-alloc"><option value="false">否</option><option value="true">是</option></select></div>
+      </div>
+      <button class="btn-primary" onclick="addProduct()">＋ 新增品項</button>
+    </div>
+
+    <!-- 篩選 + 清單 -->
+    <div class="filter-bar">
+      <select class="filter-select" id="prod-vendor" onchange="renderProducts()"><option value="">全部代理商</option><option value="BNE">BNE</option><option value="GS">GSE</option><option value="SONY">SONY</option></select>
+      <select class="filter-select" id="prod-platform" onchange="renderProducts()"><option value="">全部平台</option><option>NS</option><option>NS2</option><option>PS5</option><option>PS4</option><option>VR</option></select>
+      <select class="filter-select" id="prod-category" onchange="renderProducts()"><option value="">全部類型</option></select>
+      <select class="filter-select" id="prod-status-filter" onchange="renderProducts()"><option value="">全部狀態</option><option value="">— 未設定</option><option value="instock">現庫可出</option><option value="incoming">即將到貨</option><option value="limited">限量</option><option value="unavailable">無法供應</option></select>
+      <input class="filter-search" id="prod-search" placeholder="🔍 品名、P/N 或條碼…" oninput="renderProducts()">
+      <span class="filter-count" id="prod-count">—</span>
+    </div>
+    <div class="tbl-wrap">
+      <div class="tbl-header"><span class="tbl-title">所有品項清單</span></div>
+      <table><thead><tr>
+        <th style="width:45px">代理</th><th style="width:55px">平台</th><th style="width:65px">類型</th>
+        <th>品名</th><th style="width:100px">AGBS P/N</th><th style="width:105px">國際條碼</th><th style="width:62px">規格</th>
+        <th style="width:68px;text-align:right">SRP</th><th style="width:68px;text-align:right">出貨價</th>
+        <th style="width:52px;text-align:right">MOQ</th><th style="width:52px;text-align:right">上限</th>
+        <th style="width:108px">狀態</th>
+        <th style="width:112px">到貨日</th><th style="width:48px;text-align:center">編輯</th><th style="width:38px"></th>
+      </tr></thead><tbody id="prod-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- ══ MOQ 回填 ══ -->
+  <div id="tab-moq" class="hidden">
+    <div class="filter-bar">
+      <select class="filter-select" id="moq-vendor" onchange="renderMOQ()"><option value="">全部代理商</option><option value="BNE">BNE</option><option value="GS">GSE</option><option value="SONY">SONY</option></select>
+      <select class="filter-select" id="moq-platform" onchange="renderMOQ()"><option value="">全部平台</option><option>NS</option><option>NS2</option><option>PS5</option><option>PS4</option><option>VR</option></select>
+      <select class="filter-select" id="moq-category" onchange="renderMOQ()"><option value="">全部類型</option></select>
+      <input class="filter-search" id="moq-search" placeholder="🔍 搜尋品名或條碼…" oninput="renderMOQ()">
+      <span class="filter-count" id="moq-count">—</span>
+    </div>
+    <div class="tbl-wrap">
+      <div class="tbl-header"><span class="tbl-title">MOQ 狀態與原廠下單回填</span><span class="tbl-title" style="margin-left:auto;font-size:0.82rem;font-weight:500;color:var(--text2)">即時儲存</span></div>
+      <table><thead><tr>
+        <th style="width:45px">代理</th><th style="width:55px">平台</th><th style="width:65px">類型</th>
+        <th>品名 / 條碼</th><th style="width:62px;text-align:right">MOQ</th>
+        <th style="width:72px;text-align:right">已登記</th><th style="width:85px">進度</th>
+        <th style="width:100px;text-align:right">向原廠下單</th>
+        <th style="width:85px;text-align:right">剩餘可用</th>
+        <th style="width:120px">貨物狀態</th>
+        <th style="width:125px">到貨日 / 發售日</th>
+      </tr></thead><tbody id="moq-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- ══ 通路管理 ══ -->
+  <div id="tab-dealers" class="hidden">
+    <div class="add-form">
+      <h3>新增通路</h3>
+      <div class="form-grid" style="max-width:800px">
+        <div class="fg"><label>通路名稱</label><input id="nd-name" placeholder="王碁"></div>
+        <div class="fg"><label>通路代碼（英文縮寫）</label><input id="nd-code" placeholder="WQ" style="text-transform:uppercase"></div>
+        <div class="fg"><label>負責業務</label>
+          <select id="nd-sales"><option>Edward</option><option>Wythe</option><option>Eric</option><option>Hsinhui</option><option>AKI</option><option>Tom</option><option>Mickey</option><option>Meg</option></select></div>
+      </div>
+      <button class="btn-primary" onclick="addDealer()">＋ 新增通路</button>
+    </div>
+    <div class="tbl-wrap">
+      <div class="tbl-header">
+        <span class="tbl-title">通路清單</span>
+        <span class="filter-count" style="margin-left:auto" id="dealer-count-badge">—</span>
+      </div>
+      <table><thead><tr>
+        <th>通路名稱</th><th>通路代碼</th><th>負責業務</th>
+        <th>專屬連結代碼</th><th style="width:200px">操作</th>
+      </tr></thead><tbody id="dealers-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- ══ 業務管理 ══ -->
+  <div id="tab-sales" class="hidden">
+    <div class="add-form">
+      <h3>業務名單管理</h3>
+      <p style="font-size:0.88rem;color:var(--text2);margin-bottom:1rem">業務名稱用於通路對應，修改後需同步更新相關通路的業務欄位</p>
+      <div id="sales-list" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:1rem"></div>
+      <div style="display:flex;gap:10px;align-items:flex-end">
+        <div class="fg" style="flex:1;max-width:200px"><label>新增業務名稱</label><input id="new-sales-name" placeholder="業務姓名"></div>
+        <button class="btn-primary" onclick="addSalesPerson()">＋ 新增</button>
+      </div>
+    </div>
+    <!-- 業務轄區一覽 -->
+    <div class="tbl-wrap">
+      <div class="tbl-header"><span class="tbl-title">業務轄區與訂單彙整</span></div>
+      <table><thead><tr>
+        <th>業務</th><th style="text-align:right">轄區通路數</th><th style="text-align:right">本週合計訂量</th><th style="text-align:right">MOQ 缺口數</th><th>通路列表</th>
+      </tr></thead><tbody id="sales-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- ══ 報表匯出 ══ -->
+  <div id="tab-reports" class="hidden">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:1.5rem">
+
+      <!-- 後勤報表 -->
+      <div class="add-form" style="margin-bottom:0">
+        <h3>📊 後勤統計報表</h3>
+        <p style="font-size:0.85rem;color:var(--text2);margin-bottom:1.2rem;line-height:1.6">
+          包含：代理商、平台、類型、品名、AGM P/N、國際條碼、MOQ、已登記總量、各通路分布、向原廠下單量、剩餘可用、到貨日、狀態
+        </p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn-success" onclick="exportLogisticsCSV()">📥 匯出後勤報表 CSV</button>
+        </div>
+      </div>
+
+      <!-- 業務報表 -->
+      <div class="add-form" style="margin-bottom:0">
+        <h3>💼 業務確認報表</h3>
+        <p style="font-size:0.85rem;color:var(--text2);margin-bottom:1.2rem;line-height:1.6">
+          包含：代理商、平台、品名、MOQ、各通路登記量明細、合計、MOQ 缺口警示、狀態
+        </p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn-success" style="background:var(--accent)" onclick="exportSalesCSV()">📥 匯出業務報表 CSV</button>
+          <select id="report-sales-filter" class="filter-select" style="font-size:0.85rem">
+            <option value="">全部業務</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 經銷商報表 -->
+      <div class="add-form" style="margin-bottom:0">
+        <h3>🏪 經銷商訂單報表</h3>
+        <p style="font-size:0.85rem;color:var(--text2);margin-bottom:1.2rem;line-height:1.6">
+          包含：平台、類型、品名、國際條碼、出貨價、訂購數量、到貨日、狀態<br>
+          <strong>選擇單一通路匯出</strong>
+        </p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <select id="report-dealer-filter" class="filter-select" style="font-size:0.85rem"><option value="">選擇通路…</option></select>
+          <button class="btn-success" style="background:var(--amber)" onclick="exportDealerCSV()">📥 匯出經銷商報表 CSV</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ 通路連結 ══ -->
+  <div id="tab-links" class="hidden">
+    <div class="add-form">
+      <h3>各通路專屬連結</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:0.5rem">
+        <button class="btn-primary" onclick="copyAllLinks()">📋 複製全部連結</button>
+        <button class="btn-export" onclick="exportLinksCSV()">📥 匯出 CSV</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <div class="tbl-header"><span class="tbl-title">通路連結清單</span></div>
+      <table><thead><tr>
+        <th>通路名稱</th><th>負責業務</th><th>通路代碼</th><th>專屬連結</th><th style="width:80px"></th>
+      </tr></thead><tbody id="links-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- ══ 週期設定 ══ -->
+  <div id="tab-window" class="hidden">
+    <div class="add-form" style="max-width:700px">
+      <h3>收單週期設定</h3>
+      <p style="font-size:0.85rem;color:var(--text2);margin-bottom:1rem">設定後經銷商填單頁面頂部會顯示本週收單起始與截止時間</p>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr;max-width:660px">
+        <div class="fg"><label>當週週次（例：2025-W20）</label><input id="wk-week" placeholder="2025-W20"></div>
+        <div class="fg"><label>收單視窗狀態</label>
+          <select id="wk-open"><option value="true">✅ 開放收單中</option><option value="false">⏸ 已關閉結算中</option></select></div>
+        <div class="fg"><label>📅 收單起始時間</label>
+          <input id="wk-start" type="datetime-local">
+          <small style="color:var(--text3);font-size:0.78rem">顯示於經銷商填單頁</small></div>
+        <div class="fg"><label>🔔 收單截止時間</label>
+          <input id="wk-end" type="datetime-local">
+          <small style="color:var(--text3);font-size:0.78rem">截止後建議關閉收單視窗</small></div>
+      </div>
+      <div id="wk-preview" style="margin:1rem 0;background:var(--accent-dim);border:1px solid #bfcffe;border-radius:8px;padding:0.75rem 1rem;font-size:0.88rem;color:var(--text2);display:none">
+        <strong style="color:var(--accent)">預覽：</strong> <span id="wk-preview-text"></span>
+      </div>
+      <button class="btn-primary" onclick="saveWindowSettings()">儲存設定</button>
+    </div>
+    <div style="margin-top:1.5rem;background:#fff;border:2px solid var(--border);border-radius:var(--radius);padding:1.5rem">
+      <h3 style="font-size:1rem;font-weight:700;margin-bottom:1rem;color:var(--text2)">目前收單狀態</h3>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="win-dot" id="win-dot"></div>
+        <span style="font-size:1.1rem;font-weight:700" id="win-text">—</span>
+        <span style="color:var(--text2)" id="win-week-display">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 系統設定 ══ -->
+  <div id="tab-system" class="hidden">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <!-- 密碼管理 -->
+      <div class="add-form">
+        <h3>密碼管理</h3>
+        <p style="font-size:0.85rem;color:var(--text2);margin-bottom:1rem;line-height:1.6">密碼儲存在 HTML 檔案中，修改後需重新上傳到 GitHub</p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem">
+            <div style="font-size:0.82rem;color:var(--text3);margin-bottom:4px;font-weight:700">後勤統計密碼</div>
+            <code style="font-family:var(--mono);font-size:1rem;color:var(--text)">agm2025</code>
+            <span style="font-size:0.78rem;color:var(--text3);margin-left:8px">（在 index.html 修改）</span>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem">
+            <div style="font-size:0.82rem;color:var(--text3);margin-bottom:4px;font-weight:700">PM 管理密碼</div>
+            <code style="font-family:var(--mono);font-size:1rem;color:var(--text)">pm2025</code>
+            <span style="font-size:0.78rem;color:var(--text3);margin-left:8px">（在 index.html 修改）</span>
+          </div>
+          <div style="background:var(--red-dim);border:1px solid var(--red-b);border-radius:var(--radius-sm);padding:1rem">
+            <div style="font-size:0.82rem;color:var(--red);margin-bottom:4px;font-weight:700">Super Admin 密碼</div>
+            <code style="font-family:var(--mono);font-size:1rem;color:var(--red)">super2025</code>
+            <span style="font-size:0.78rem;color:var(--red);margin-left:8px">（在 index.html 修改）</span>
+          </div>
+        </div>
+      </div>
+      <!-- Firebase 資訊 -->
+      <div class="add-form">
+        <h3>Firebase 資料庫</h3>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:0.88rem">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem">
+            <div style="font-weight:700;margin-bottom:4px">Project ID</div>
+            <code style="font-family:var(--mono);font-size:0.88rem;color:var(--accent)">agm-tracking</code>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem">
+            <div style="font-weight:700;margin-bottom:4px">Database URL</div>
+            <code style="font-family:var(--mono);font-size:0.78rem;color:var(--text2)">agm-tracking-default-rtdb.asia-southeast1.firebasedatabase.app</code>
+          </div>
+          <div style="background:var(--amber-dim);border:1px solid var(--amber-b);border-radius:var(--radius-sm);padding:1rem">
+            <div style="font-weight:700;color:var(--amber);margin-bottom:4px">⚠ 安全規則</div>
+            <div style="font-size:0.82rem;color:var(--text2)">目前為測試模式（開放讀寫）。正式上線前請至 Firebase Console 設定適當規則。</div>
+            <a href="https://console.firebase.google.com/project/agm-tracking/database/agm-tracking-default-rtdb/rules" target="_blank"
+              style="display:inline-block;margin-top:8px;font-size:0.82rem;color:var(--accent);text-decoration:underline">前往設定規則 →</a>
+          </div>
+        </div>
+      </div>
+      <!-- 危險操作 -->
+      <div class="add-form" style="border-color:var(--red-b);background:var(--red-dim)">
+        <h3 style="color:var(--red)">⚠ 危險操作</h3>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:0.5rem">
+          <button class="btn-danger" onclick="clearAllOrders()">🗑 清除本週所有訂單（無法復原）</button>
+          <button class="btn-danger" onclick="seedDB()">🔄 重新初始化產品資料庫</button>
+        </div>
+      </div>
+      <!-- 系統資訊 -->
+      <div class="add-form">
+        <h3>系統資訊</h3>
+        <div style="font-size:0.88rem;display:flex;flex-direction:column;gap:8px">
+          <div><span style="color:var(--text3);font-weight:600">部署：</span>Netlify + GitHub 自動部署</div>
+          <div><span style="color:var(--text3);font-weight:600">網址：</span><a href="https://agm-tracking.netlify.app" style="color:var(--accent)">agm-tracking.netlify.app</a></div>
+          <div><span style="color:var(--text3);font-weight:600">GitHub：</span><a href="https://github.com/acergaming-service/agm-tracking" style="color:var(--accent)">acergaming-service/agm-tracking</a></div>
+          <div><span style="color:var(--text3);font-weight:600">資料庫：</span>Firebase Realtime Database（asia-southeast1）</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- 編輯品項 Modal -->
+<div class="modal-overlay hidden" id="edit-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#fff;border-radius:var(--radius);padding:2rem;width:100%;max-width:700px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <h2 style="font-size:1.2rem;font-weight:900;margin-bottom:1.5rem;color:var(--red)">✏️ 編輯品項</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem">
+      <div class="fg" style="grid-column:1/-1"><label>中文品名</label><input id="ep-name"></div>
+      <div class="fg"><label>代理商</label>
+        <select id="ep-vendor" disabled style="background:var(--surface2);cursor:not-allowed">
+          <option value="BNE">BNE</option><option value="GS">GSE</option><option value="SONY">SONY</option>
+        </select></div>
+      <div class="fg"><label>平台</label>
+        <select id="ep-platform"><option>NS</option><option>NS2</option><option>PS5</option><option>PS4</option><option>VR</option></select></div>
+      <div class="fg"><label>類型</label>
+        <select id="ep-category"><option>軟體</option><option>主機</option><option>周邊</option><option>女性向</option><option>誠翼</option><option>OLP</option><option>PS4 HITS</option><option>SEGA</option><option>VR</option><option>軟體(三廠)</option></select></div>
+      <div class="fg"><label>AGBS P/N</label><input id="ep-pn" placeholder="ZL.A00TZ.XXX"></div>
+      <div class="fg"><label>國際條碼 (EAN)</label><input id="ep-barcode" placeholder="4713014XXXXXX"></div>
+      <div class="fg"><label>規格 / 型號</label><input id="ep-spec"></div>
+      <div class="fg"><label>SRP（含稅）</label><input id="ep-srp" type="number"></div>
+      <div class="fg"><label>出貨價（未稅）</label><input id="ep-price" type="number"></div>
+      <div class="fg"><label>優惠出貨價（SONY用）</label><input id="ep-price-special" type="number"></div>
+      <div class="fg"><label>MOQ（最低訂購量）</label><input id="ep-moq" type="number"></div>
+      <div class="fg"><label>上限（maxOrder，空白=無上限）</label><input id="ep-max" type="number" placeholder="—"></div>
+      <div class="fg"><label>分配出貨</label>
+        <select id="ep-alloc"><option value="false">否</option><option value="true">是（分配出貨）</option></select></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closeEditModal()" style="background:#fff;border:2px solid var(--border);color:var(--text2);border-radius:var(--radius-sm);padding:9px 22px;font-family:var(--font);font-size:0.92rem;font-weight:600;cursor:pointer">取消</button>
+      <button onclick="saveEditModal()" style="background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:9px 22px;font-family:var(--font);font-size:0.92rem;font-weight:700;cursor:pointer">儲存變更</button>
+    </div>
+  </div>
 </div>
 
-<div class="summary-bar">
-  <div class="sum-item"><span class="sum-label">本次品項</span><span class="sum-value" id="sum-items">0</span></div>
-  <div class="sum-sep"></div>
-  <div class="sum-item"><span class="sum-label">合計數量</span><span class="sum-value" id="sum-qty">0</span></div>
-  <div class="sum-sep"></div>
-  <div class="sum-item"><span class="sum-label">同步狀態</span><span class="sum-value" style="font-size:0.85rem;color:var(--text2)" id="sum-sync">—</span></div>
-  <button class="btn-submit" id="submit-btn" onclick="showConfirm()">確認送出 ✓</button>
-</div>
-
-<div class="modal-overlay hidden" id="confirm-modal">
-  <div class="modal">
-    <h2>確認送出訂單</h2>
-    <p id="modal-info"></p>
-    <div class="order-summary" id="modal-summary"></div>
-    <div style="margin-bottom:1.2rem">
-      <label style="font-size:0.88rem;font-weight:700;color:var(--text2);display:block;margin-bottom:6px">備註（選填）</label>
-      <textarea id="order-note" placeholder="例：請分批出貨 / 特殊包裝需求 / 其他說明…"
-        style="width:100%;background:#fff;border:2px solid var(--border);border-radius:var(--radius-sm);
-               color:var(--text);font-family:var(--font);font-size:0.92rem;padding:10px 12px;
-               outline:none;resize:vertical;min-height:80px;line-height:1.6"
-        onfocus="this.style.borderColor='var(--accent)'"
-        onblur="this.style.borderColor='var(--border)'"></textarea>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">返回修改</button>
-      <button class="btn-confirm" onclick="submitOrder()">確認送出</button>
-    </div>
-  </div>
-</div>
 <div class="toast hidden" id="toast"></div>
 
 <script>
 const FIREBASE_CONFIG={apiKey:"AIzaSyA-eDT7V7asiQ5ebGca-wBif8P-uW89_iQ",authDomain:"agm-tracking.firebaseapp.com",databaseURL:"https://agm-tracking-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"agm-tracking",storageBucket:"agm-tracking.firebasestorage.app",messagingSenderId:"91450833150",appId:"1:91450833150:web:79e5b01783be48ebff4daf"};
 
-// ── URL code 驗證 ──────────────────────────────────────────────────────────
-const RAW_CODE=(new URLSearchParams(location.search).get('code')||'').toUpperCase().trim();
+const STATUS_OPTS=[
+  {v:'',l:'— 未設定',cls:'s-empty'},{v:'instock',l:'現庫可出',cls:'s-instock'},
+  {v:'incoming',l:'即將到貨',cls:'s-incoming'},{v:'limited',l:'限量出完為止',cls:'s-limited'},
+  {v:'tbc',l:'確認供貨中',cls:'s-tbc'},{v:'available',l:'可追貨',cls:'s-available'},
+  {v:'delayed',l:'延遲到貨',cls:'s-delayed'},{v:'unavailable',l:'無法供應',cls:'s-unavailable'},
+  {v:'clearance',l:'專案出清',cls:'s-clearance'},{v:'preorder',l:'預購中',cls:'s-preorder'},
+];
+const STATUS_MAP=Object.fromEntries(STATUS_OPTS.map(o=>[o.v,o]));
+const VENDOR_LABEL={BNE:'BNE',GS:'GSE',SONY:'SONY'};
 
-// ── State ─────────────────────────────────────────────────────────────────
-let fbDB, DEALER_ID, DEALER_INFO, config={}, localOrders={}, pmData={};
-let isWindowOpen=true, saveTimer;
-let activeVendor='BNE', activeSubFilter='全部';
+let fbDB,products={},dealers={},orders={},pmData={},winData={};
+let allRows=[]; // for overview
+let importData=[]; // for batch import
+let activeTab='overview';
+let salesList=['Edward','Wythe','Eric','Hsinhui','AKI','Tom','Mickey','Meg'];
 
-// 代理商顯示名稱
-const VENDOR_LABEL = { BNE:'BNE（萬代南夢宮）', GS:'GSE（Game Source Entertainment）', SONY:'SONY' };
-const VENDOR_SHORT = { BNE:'BNE', GS:'GSE', SONY:'SONY' };
-
-// 狀態設定（status 空白 = 未設定，由 PM 維護）
-const STATUS_CFG={
-  '':          { label:'—',           color:'var(--text3)',   dot:'#d8dde6' },
-  available:   { label:'可追貨',      color:'var(--text2)',   dot:'#7a8699' },
-  instock:     { label:'現庫可出',    color:'var(--green)',   dot:'#16a34a' },
-  incoming:    { label:'即將到貨',    color:'var(--amber)',   dot:'#d97706' },
-  limited:     { label:'限量出完為止',color:'var(--amber)',   dot:'#d97706' },
-  tbc:         { label:'確認供貨中',  color:'var(--amber)',   dot:'#d97706' },
-  delayed:     { label:'延遲到貨',    color:'var(--red)',     dot:'#dc2626' },
-  unavailable: { label:'無法供應',    color:'var(--text3)',   dot:'#b0b8c8' },
-  clearance:   { label:'專案出清',    color:'var(--purple)',  dot:'#7c3aed' },
-  preorder:    { label:'預購中',      color:'var(--accent)',  dot:'#1d6ef5' },
-};
-
-// ── Init ──────────────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', async()=>{
-  if(!RAW_CODE){showInvalidCode('未帶入通路代碼');return;}
+window.addEventListener('DOMContentLoaded',async()=>{
+  if(sessionStorage.getItem('role')!=='superadmin'){location.href='index.html';return;}
   try{
     if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
     fbDB=firebase.database();
-
-    const[prodSnap,dealerSnap,winSnap,orderSnap,pmSnap]=await Promise.all([
-      fbDB.ref('products').once('value'),
-      fbDB.ref('dealers').once('value'),
-      fbDB.ref('window').once('value'),
-      fbDB.ref('orders').once('value'),  // 暫時先讀，後面再用 DEALER_ID 過濾
-      fbDB.ref('pmData').once('value'),
+    const[pSnap,dSnap,pmSnap,wSnap]=await Promise.all([
+      fbDB.ref('products').once('value'),fbDB.ref('dealers').once('value'),
+      fbDB.ref('pmData').once('value'),fbDB.ref('window').once('value'),
     ]);
-
-    const dealers=dealerSnap.val()||{};
-    const products=prodSnap.val()||{};
-    const winData=winSnap.val()||{open:true,week:''};
-    pmData=pmSnap.val()||{};
-
-    // 驗證 code
-    for(const[id,d]of Object.entries(dealers)){
-      if(RAW_CODE===(d.code+'2025').toUpperCase()){DEALER_ID=id;DEALER_INFO=d;break;}
-    }
-    if(!DEALER_ID){showInvalidCode(RAW_CODE);return;}
-
-    config={products};
-    isWindowOpen=winData.open!==false;
-
-    // 讀本通路訂單
-    const allOrders=orderSnap.val()||{};
-    localOrders=allOrders[DEALER_ID]||{};
-
-    // 即時監聽
-    fbDB.ref('window').on('value',snap=>{
-      const w=snap.val()||{};
-      isWindowOpen=w.open!==false;
-      document.getElementById('nav-week').textContent=w.week||'';
-      updateWindowUI();
-      updateWindowTimeBanner(w);
-    });
-    // 監聽所有通路訂單，計算全域已登記量
-    fbDB.ref('orders').on('value',snap=>{
-      const allOrders=snap.val()||{};
-      // 計算每個品項的全域總量
-      window._globalTotals={};
-      Object.entries(allOrders).forEach(([did,dOrders])=>{
-        Object.entries(dOrders||{}).forEach(([pid,o])=>{
-          if(o?.qty>0) window._globalTotals[pid]=(window._globalTotals[pid]||0)+o.qty;
-        });
-      });
-      // 更新自己的訂單
-      localOrders=allOrders[DEALER_ID]||{};
-      updateSummary(); renderVendorTabs(); renderSubTabs(); renderProducts();
-    });
-    fbDB.ref('pmData').on('value',snap=>{
-      pmData=snap.val()||{};
-      renderProducts();
-    });
-    // 監聽 products 變化（PM/Admin 更新 maxOrder、狀態等後即時反映）
-    fbDB.ref('products').on('value',snap=>{
-      config.products=snap.val()||{};
-      renderVendorTabs(); renderSubTabs(); renderProducts();
-    });
-
-    document.getElementById('nav-dealer').textContent=DEALER_INFO.name;
-    document.getElementById('nav-week').textContent=winData.week||'';
-    document.getElementById('page-title').textContent=DEALER_INFO.name+' — 訂購登記';
-
-    updateWindowUI();
-    renderVendorTabs();
-    renderSubTabs();
-    renderProducts();
-    updateSummary();
+    products=pSnap.val()||{}; dealers=dSnap.val()||{};
+    pmData=pmSnap.val()||{};   winData=wSnap.val()||{};
+    fbDB.ref('orders').on('value',snap=>{orders=snap.val()||{};buildAllRows();renderOverview();renderStats();});
+    fbDB.ref('pmData').on('value',snap=>{pmData=snap.val()||{};if(activeTab==='moq')renderMOQ();if(activeTab==='overview')renderOverview();});
+    fbDB.ref('products').on('value',snap=>{products=snap.val()||{};populateCategoryFilters();if(activeTab==='products')renderProducts();});
+    fbDB.ref('dealers').on('value',snap=>{dealers=snap.val()||{};if(activeTab==='dealers')renderDealers();});
+    fbDB.ref('window').on('value',snap=>{winData=snap.val()||{};renderWindowStatus();});
+    populateCategoryFilters(); populateReportFilters();
+    buildAllRows(); renderOverview(); renderStats();
     document.getElementById('loading-screen').classList.add('hidden');
-
   }catch(err){
-    document.getElementById('loading-screen').innerHTML=
-      `<div style="text-align:center;color:#dc2626;padding:2rem">
-        <div style="font-size:3rem;margin-bottom:1rem">⚠️</div>
-        <div style="font-size:1rem;font-weight:600">連線失敗</div>
-        <div style="font-size:0.85rem;color:#7a8699;margin-top:8px">${err.message}</div>
-      </div>`;
+    document.getElementById('loading-screen').innerHTML=`<div style="text-align:center;color:#dc2626;padding:2rem"><div style="font-size:3rem">⚠️</div><div style="margin-top:1rem;font-weight:600">${err.message}</div></div>`;
   }
 });
 
-// ── 收單時間提示 ─────────────────────────────────────────────────────────
-function updateWindowTimeBanner(w){
-  const banner=document.getElementById('window-time-banner');
-  const fmtDT=v=>{
-    if(!v) return '';
-    const d=new Date(v);
-    return d.toLocaleString('zh-TW',{month:'numeric',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'});
-  };
-  const hasInfo=w.week||w.startTime||w.endTime;
-  if(!hasInfo){banner.classList.add('hidden');return;}
-  banner.classList.remove('hidden');
-  const weekEl=document.getElementById('dealer-win-week');
-  const startEl=document.getElementById('dealer-win-start');
-  const endEl=document.getElementById('dealer-win-end');
-  if(weekEl) weekEl.textContent=w.week?`週次：${w.week}`:'';
-  if(startEl) startEl.textContent=w.startTime?`開始：${fmtDT(w.startTime)}`:'';
-  if(endEl)   endEl.textContent=w.endTime?`📌 截止：${fmtDT(w.endTime)}`:'';
+// ── Tab 切換 ─────────────────────────────────────────────────────────────────
+function switchTab(tab,el){
+  activeTab=tab;
+  document.querySelectorAll('.main-tab').forEach(t=>t.classList.remove('active')); el.classList.add('active');
+  ['overview','products','moq','dealers','sales','reports','links','window','system'].forEach(t=>{
+    const d=document.getElementById('tab-'+t); if(d) d.classList.toggle('hidden',t!==tab);
+  });
+  const renderers={overview:()=>{buildAllRows();renderOverview();},products:renderProducts,moq:renderMOQ,dealers:renderDealers,sales:renderSalesTab,links:renderLinks,window:renderWindowForm,reports:populateReportFilters};
+  if(renderers[tab]) renderers[tab]();
 }
 
-// ── 視窗狀態 ──────────────────────────────────────────────────────────────
-function updateWindowUI(){
-  const open=isWindowOpen;
-  document.getElementById('window-closed-banner').classList.toggle('hidden',open);
-  document.getElementById('window-badge').textContent=open?'收單中':'已結算';
-  document.getElementById('window-badge').className='badge '+(open?'badge-green':'badge-amber');
-  document.getElementById('submit-btn').disabled=!open;
-  renderProducts();
-}
-
-// ── 子類別選項（依代理商）─────────────────────────────────────────────────
-function getSubFilters(vendor){
-  const prods=Object.values(config.products?.[vendor]||{});
-  if(vendor==='BNE'){
-    // BNE 全是軟體，用平台分
-    const plats=[...new Set(prods.map(p=>p.platform))].sort();
-    return ['全部',...plats];
-  } else if(vendor==='GS'){
-    // GSE 用類型分
-    const cats=[...new Set(prods.map(p=>p.category||'軟體'))].sort();
-    return ['全部',...cats];
-  } else {
-    // SONY 用類型分
-    const cats=[...new Set(prods.map(p=>p.category||'軟體'))].sort();
-    return ['全部',...cats];
-  }
-}
-
-function filterProducts(vendor, subFilter){
-  const prods=Object.values(config.products?.[vendor]||{});
-  if(subFilter==='全部') return prods;
-  if(vendor==='BNE'){
-    return prods.filter(p=>p.platform===subFilter);
-  } else {
-    return prods.filter(p=>(p.category||'軟體')===subFilter);
-  }
-}
-
-// ── 大 Tab ────────────────────────────────────────────────────────────────
-function renderVendorTabs(){
-  const vendors=Object.keys(config.products||{});
-  document.getElementById('vendor-tabs').innerHTML=vendors.map(v=>{
-    const prods=Object.values(config.products[v]||{});
-    const count=prods.filter(p=>(localOrders[p.id]?.qty||0)>0).length;
-    const label=VENDOR_SHORT[v]||v;
-    return `<button class="vendor-tab ${v===activeVendor?'active':''}" onclick="switchVendor('${v}')">
-      ${label}${count>0?`<span class="vtab-badge">${count}</span>`:''}
-    </button>`;
-  }).join('');
-}
-
-function switchVendor(v){
-  activeVendor=v;
-  activeSubFilter='全部';
-  renderVendorTabs();
-  renderSubTabs();
-  renderProducts();
-}
-
-// ── 子 Tab ────────────────────────────────────────────────────────────────
-function renderSubTabs(){
-  const filters=getSubFilters(activeVendor);
-  const prods=Object.values(config.products?.[activeVendor]||{});
-  document.getElementById('sub-tabs').innerHTML=filters.map(f=>{
-    let filtered;
-    if(f==='全部') filtered=prods;
-    else if(activeVendor==='BNE') filtered=prods.filter(p=>p.platform===f);
-    else filtered=prods.filter(p=>(p.category||'軟體')===f);
-    const count=filtered.filter(p=>(localOrders[p.id]?.qty||0)>0).length;
-    return `<button class="sub-tab ${f===activeSubFilter?'active':''}" onclick="switchSubFilter('${f}')">
-      ${f}${count>0?`<span class="sub-tab-badge">${count}</span>`:''}
-    </button>`;
-  }).join('');
-}
-
-function switchSubFilter(f){
-  activeSubFilter=f;
-  renderSubTabs();
-  renderProducts();
-}
-
-// ── 產品列表 ──────────────────────────────────────────────────────────────
-function renderProducts(){
-  let prods=filterProducts(activeVendor, activeSubFilter);
-  if(searchQuery) prods=prods.filter(p=>matchesSearch(p));
-  const isSONY=activeVendor==='SONY';
-
-  const rows=prods.map(p=>{
-    const qty=localOrders[p.id]?.qty||0;
-    const disabled=!isWindowOpen||p.status==='unavailable'||p.status==='clearance';
-    // 庫存不顯示給經銷商
-    let stockHtml='';
-
-    // 優惠價（SONY）
-    const specialHtml=(isSONY&&p.priceSpecial&&p.priceSpecial!==p.price)?
-      `<div class="price-special">優惠價 NT$${p.priceSpecial.toLocaleString()}</div>`:'';
-
-    return `<div class="prod-row">
-      <div>
-        <span class="platform-tag ${p.platform}">${p.platform}</span>
-
-      </div>
-      <div>
-        <div class="prod-name">${p.name}</div>
-        ${(()=>{
-          const _pm=pmData[p.id]||{};
-          const _st=(_pm.status!==undefined&&_pm.status!==null?_pm.status:p.status)||'';
-          const cfg=STATUS_CFG[_st]||STATUS_CFG[''];
-          const arrival=_pm.arrival||p.arrival||'';
-          const moqVal=_pm.moq||p.moq||0;
-          return `
-          <div class="prod-meta" style="margin-top:5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            ${!arrival?`<span style="width:8px;height:8px;border-radius:50%;background:${cfg.dot};display:inline-block;flex-shrink:0"></span>
-            <span style="font-size:0.85rem;font-weight:600;color:${cfg.color}">${cfg.label}</span>`:''}
-            ${p.spec?`<span style="font-size:0.75rem;color:var(--text3);background:var(--surface2);padding:1px 6px;border-radius:4px">${p.spec}</span>`:''}
-          </div>
-          <div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-            ${arrival?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.85rem;font-weight:700;background:#d97706;color:#fff;padding:4px 12px;border-radius:6px">
-              📅 到貨日：${arrival}
-            </span>`:''}
-
-            ${p.isAllocation?`<span style="font-size:0.78rem;font-weight:700;background:var(--amber-dim);color:var(--amber);padding:2px 9px;border-radius:6px;border:1px solid var(--amber-b)">⚠ 分配出貨，數量由 AGM 決定</span>`:''}
-            ${(()=>{
-              if(!p.maxOrder) return '';
-              const gTotal=(window._globalTotals||{})[p.id]||0;
-              const over=gTotal>p.maxOrder;
-              const pct=Math.min(100,Math.round(gTotal/p.maxOrder*100));
-              const color=over?'var(--red)':pct>=80?'var(--amber)':'var(--green)';
-              return `<div style="margin-top:4px">
-                <span style="font-size:0.8rem;font-weight:700;color:${color};background:${over?'var(--red-dim)':pct>=80?'var(--amber-dim)':'var(--green-dim)'};padding:2px 9px;border-radius:6px;border:1px solid ${over?'var(--red-b)':pct>=80?'var(--amber-b)':'var(--green-b)'}">
-                  ${over?'🔴':'📊'} 全通路已登記 ${gTotal} / 上限 ${p.maxOrder} 件${over?' （已超量）':''}
-                </span>
-              </div>`;
-            })()}
-          </div>
-          ${p.barcode?`<div style="margin-top:5px">
-            <span style="font-family:var(--mono);font-size:0.82rem;color:var(--text2);letter-spacing:0.04em"><span style="color:var(--text3)">國條:</span>${p.barcode}</span>
-          </div>`:''}`;
-        })()}
-      </div>
-      <div class="price-col">
-        <div class="price-main">NT$${(p.price||0).toLocaleString()}</div>
-        ${specialHtml}
-        <div class="price-srp">SRP ${(p.srp||0).toLocaleString()}</div>
-      </div>
-      <div class="qty-ctrl">
-        ${disabled
-          ?`<span style="font-size:0.9rem;color:var(--text3);font-weight:600">${isWindowOpen?'不可訂':'已結算'}</span>`
-          :`<button class="qty-btn" onclick="changeQty('${p.id}',-1)">−</button>
-            <input class="qty-input ${qty>0?'has-value':''}" type="number" min="0" value="${qty}"
-              id="qty-${p.id}" oninput="onQtyInput('${p.id}',this.value)">
-            <button class="qty-btn" onclick="changeQty('${p.id}',1)">+</button>`}
-      </div>
-    </div>`;
-  }).join('');
-
-  document.getElementById('product-area').innerHTML=
-    `<div class="prod-wrap">
-      <div class="prod-thead">
-        <span>平台</span><span>品名</span>
-        <span style="text-align:right">出貨價（未稅）</span>
-        <span style="text-align:right">訂購數量</span>
-      </div>
-      ${rows||`<div style="padding:2rem;text-align:center;color:var(--text3)">此分類目前無品項</div>`}
-    </div>`;
-}
-
-// ── 訂單操作 ──────────────────────────────────────────────────────────────
-function changeQty(pid,delta){
-  const inp=document.getElementById('qty-'+pid);
-  if(!inp)return;
-  inp.value=Math.max(0,(parseInt(inp.value)||0)+delta);
-  onQtyInput(pid,inp.value);
-}
-
-function onQtyInput(pid,rawVal){
-  const qty=Math.max(0,parseInt(rawVal)||0);
-  const inp=document.getElementById('qty-'+pid);
-  if(inp){inp.value=qty;inp.classList.toggle('has-value',qty>0);}
-  if(!localOrders[pid])localOrders[pid]={};
-  localOrders[pid].qty=qty;
-  updateSummary();
-  clearTimeout(saveTimer);
-  document.getElementById('saving-ring').classList.add('show');
-  saveTimer=setTimeout(()=>saveOne(pid,qty),350);
-}
-
-async function saveOne(pid,qty){
-  try{
-    await fbDB.ref(`orders/${DEALER_ID}/${pid}`).update({qty,updatedAt:new Date().toISOString(),submitted:false});
-    document.getElementById('saving-ring').classList.remove('show');
-    document.getElementById('sum-sync').textContent='已同步 '+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
-  }catch(e){
-    document.getElementById('saving-ring').classList.remove('show');
-    showToast('同步失敗，請檢查網路','red');
-  }
-}
-
-function updateSummary(){
-  let items=0,qty=0;
-  Object.values(localOrders).forEach(o=>{if(o?.qty>0){items++;qty+=o.qty;}});
-  document.getElementById('sum-items').textContent=items;
-  document.getElementById('sum-qty').textContent=qty;
-  renderVendorTabs();
-  renderSubTabs();
-}
-
-// ── 確認送出 ──────────────────────────────────────────────────────────────
-function showConfirm(){
-  const allProds=Object.values(config.products||{}).flatMap(v=>Object.values(v));
-  const orders=Object.entries(localOrders)
-    .filter(([,v])=>v?.qty>0)
-    .map(([pid,v])=>({prod:allProds.find(p=>p.id===pid),qty:v.qty}))
-    .filter(o=>o.prod);
-  if(!orders.length){showToast('請先填寫訂購數量','amber');return;}
-  document.getElementById('modal-info').textContent=`通路：${DEALER_INFO.name}｜業務：${DEALER_INFO.sales}｜共 ${orders.length} 品項`;
-  document.getElementById('modal-summary').innerHTML=orders.map(o=>
-    `<div class="order-line"><span class="order-line-name">${o.prod.name}</span><span class="order-line-qty">× ${o.qty}</span></div>`
-  ).join('');
-  const noteEl=document.getElementById('order-note');
-  if(noteEl) noteEl.value='';
-  document.getElementById('confirm-modal').classList.remove('hidden');
-}
-function closeModal(){document.getElementById('confirm-modal').classList.add('hidden');}
-
-async function submitOrder(){
-  const note=document.getElementById('order-note')?.value?.trim()||'';
-  closeModal();
-  try{
-    const ts=new Date().toISOString(),updates={};
-    Object.entries(localOrders).forEach(([pid,v])=>{
-      if(v?.qty>0){
-        updates[`orders/${DEALER_ID}/${pid}/submitted`]=true;
-        updates[`orders/${DEALER_ID}/${pid}/submittedAt`]=ts;
-      }
+// ── 共用：取品項列表 ──────────────────────────────────────────────────────────
+function getAllProds(filters={}){
+  let rows=[];
+  Object.entries(products).forEach(([v,prods])=>{
+    if(filters.vendor&&v!==filters.vendor) return;
+    Object.values(prods).forEach(p=>{
+      if(filters.platform&&p.platform!==filters.platform) return;
+      if(filters.category&&(p.category||'')!==filters.category) return;
+      if(filters.status!==undefined&&filters.status!==''&&(p.status||'')!==filters.status) return;
+      if(filters.search){const s=filters.search.toLowerCase();if(!p.name.toLowerCase().includes(s)&&!(p.barcode||'').includes(s)&&!(p.pn||'').toLowerCase().includes(s)) return;}
+      rows.push({vendor:v,...p});
     });
-    // 備註存在通路層級
-    if(note) updates[`orders/${DEALER_ID}/_note`]={text:note,submittedAt:ts};
-    await fbDB.ref().update(updates);
-    showToast('✓ 訂單已送出！後勤將於結算時匯整','green');
-  }catch(e){showToast('送出失敗：'+e.message,'red');}
+  });
+  return rows;
 }
 
-// ── 工具 ──────────────────────────────────────────────────────────────────
-// ── 搜尋 ──────────────────────────────────────────────────────────────────
-let searchQuery = '';
+function getEl(id){return document.getElementById(id);}
+function getVal(id){return (getEl(id)||{}).value||'';}
 
-function onSearch(val){
-  searchQuery = val.trim().toLowerCase();
-  document.getElementById('clear-search-btn').style.display = searchQuery ? 'block' : 'none';
-  renderProducts();
+function getTotalOrders(pid){return Object.values(orders).reduce((s,dO)=>s+((dO||{})[pid]?.qty||0),0);}
+
+function populateCategoryFilters(){
+  const cats=new Set();
+  Object.values(products).forEach(prods=>Object.values(prods).forEach(p=>{if(p.category)cats.add(p.category);}));
+  const opts='<option value="">全部類型</option>'+[...cats].sort().map(c=>`<option>${c}</option>`).join('');
+  ['moq-category','prod-category'].forEach(id=>{const el=getEl(id);if(el)el.innerHTML=opts;});
 }
 
-function clearSearch(){
-  document.getElementById('search-input').value = '';
-  searchQuery = '';
-  document.getElementById('clear-search-btn').style.display = 'none';
-  renderProducts();
+function populateReportFilters(){
+  const salesSet=new Set(Object.values(dealers).map(d=>d.sales));
+  const salesOpts='<option value="">全部業務</option>'+[...salesSet].sort().map(s=>`<option>${s}</option>`).join('');
+  const salEl=getEl('report-sales-filter'); if(salEl) salEl.innerHTML=salesOpts;
+  const dealerOpts='<option value="">選擇通路…</option>'+Object.entries(dealers).map(([id,d])=>`<option value="${id}">${d.name}（${d.sales}）</option>`).join('');
+  const dealEl=getEl('report-dealer-filter'); if(dealEl) dealEl.innerHTML=dealerOpts;
 }
 
-function matchesSearch(p){
-  if(!searchQuery) return true;
-  return p.name.toLowerCase().includes(searchQuery) ||
-         (p.barcode && p.barcode.includes(searchQuery)) ||
-         (p.pn && p.pn.toLowerCase().includes(searchQuery));
+// ── 總覽 ─────────────────────────────────────────────────────────────────────
+function buildAllRows(){
+  allRows=[];
+  const vendor=getVal('ov-vendor');
+  const moqFilter=getVal('ov-moq-filter');
+  Object.entries(products).forEach(([v,prods])=>{
+    if(vendor&&v!==vendor) return;
+    Object.values(prods).forEach(p=>{
+      const total=getTotalOrders(p.id);
+      const dealerQtys={};
+      Object.entries(orders).forEach(([did,dO])=>{const o=(dO||{})[p.id];if(o?.qty>0){dealerQtys[did]=o.qty;}});
+      let moqStatus='zero';
+      if(total>0&&total<p.moq)moqStatus='below';
+      else if(total>=p.moq&&total>0)moqStatus=p.maxOrder&&total>p.maxOrder?'over':'ok';
+      if(moqFilter&&moqStatus!==moqFilter) return;
+      allRows.push({vendor:v,p,total,dealerQtys,moqStatus});
+    });
+  });
+}
+
+function renderOverview(){
+  buildAllRows();
+  getEl('ov-count').textContent=allRows.length+' 項';
+  const statusOpts=STATUS_OPTS.map(o=>`<option value="${o.v}">${o.l}</option>`).join('');
+  getEl('ov-tbody').innerHTML=allRows.map(({vendor,p,total,dealerQtys,moqStatus})=>{
+    const pm=pmData[p.id]||{};
+    const ordered=pm.vendorOrdered||'';
+    const arrival=pm.arrival||p.arrival||'';
+    const status=(pm.status!==undefined?pm.status:p.status)??'';
+    const remaining=ordered!==''?Math.max(0,parseInt(ordered)-total):'—';
+    const remColor=remaining==='—'?'var(--text3)':remaining>0?'var(--green)':'var(--red)';
+    const pct=p.moq>0?Math.min(100,Math.round(total/p.moq*100)):0;
+    const pCls=total===0?'prog-zero':pct>=100?'prog-ok':'prog-low';
+    const gapBadge={zero:`<span class="gap-badge gap-empty">無訂單</span>`,below:`<span class="gap-badge gap-need">缺 ${p.moq-total}</span>`,ok:`<span class="gap-badge gap-ok">達標 +${total-p.moq}</span>`,over:`<span class="gap-badge gap-over">超限</span>`}[moqStatus]||'';
+    const dPills=Object.entries(dealerQtys).map(([did,qty])=>`<span class="dp has-order">${dealers[did]?.name||did}×${qty}</span>`).join('');
+    const sCls=STATUS_MAP[status]?.cls||'s-empty';
+    return `<tr>
+      <td style="font-size:0.78rem;font-weight:700">${VENDOR_LABEL[vendor]||vendor}</td>
+      <td><span class="platform-tag ${p.platform}">${p.platform}</span></td>
+      <td>
+        <div style="font-weight:600;font-size:0.85rem">${p.name}</div>
+        ${arrival?`<div style="font-size:0.72rem;background:var(--amber);color:#fff;padding:1px 6px;border-radius:4px;display:inline-block;margin-top:2px;font-weight:700">📅 ${arrival}</div>`:''}
+      </td>
+      <td style="text-align:right;font-family:var(--mono);font-size:0.85rem">${p.moq||0}</td>
+      <td style="text-align:right;font-family:var(--mono);font-weight:700;color:${total>=p.moq&&total>0?'var(--green)':total>0?'var(--amber)':'var(--text3)'}">${total}</td>
+      <td>
+        <div class="prog-wrap"><div class="prog-bar ${pCls}" style="width:${pct}%"></div></div>
+        <div style="font-size:0.65rem;color:var(--text3);margin-top:2px">${pct}%</div>
+      </td>
+      <td style="text-align:center">${gapBadge}</td>
+      <td style="text-align:right;font-family:var(--mono)">
+        <input class="inline-num ${ordered!==''?'filled':''}" type="number" min="0" value="${ordered}" placeholder="—"
+          onchange="setPMField('${p.id}','vendorOrdered',this.value)">
+      </td>
+      <td style="text-align:right;font-family:var(--mono);font-weight:700;color:${remColor}">${remaining}</td>
+      <td>${dPills}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderStats(){
+  const allProds=getAllProds();
+  let items=0,qty=0,moqLow=0,filled=0;
+  allProds.forEach(p=>{const t=getTotalOrders(p.id);if(t>0){items++;qty+=t;}if(t>0&&t<(p.moq||0))moqLow++;});
+  Object.keys(dealers).forEach(did=>{if(Object.values(orders[did]||{}).some(o=>o?.qty>0))filled++;});
+  getEl('ov-prods').textContent=allProds.length;
+  getEl('ov-orders').textContent=items;
+  getEl('ov-moq').textContent=moqLow;
+  getEl('ov-dealers').textContent=filled+'/'+Object.keys(dealers).length;
+  const open=winData.open!==false;
+  getEl('ov-window').textContent=open?'收單中':'已結算';
+  getEl('ov-window').style.color=open?'var(--green)':'var(--amber)';
+}
+
+// ── 商品管理 ─────────────────────────────────────────────────────────────────
+function renderProducts(){
+  const rows=getAllProds({vendor:getVal('prod-vendor'),platform:getVal('prod-platform'),category:getVal('prod-category'),search:getVal('prod-search')});
+  getEl('prod-count').textContent=rows.length+' 項';
+  const statusOpts=STATUS_OPTS.map(o=>`<option value="${o.v}">${o.l}</option>`).join('');
+  getEl('prod-tbody').innerHTML=rows.map(p=>{
+    const pm=pmData[p.id]||{};
+    const status=(pm.status!==undefined?pm.status:p.status)??'';
+    const arrival=pm.arrival||p.arrival||'';
+    const sCls=STATUS_MAP[status]?.cls||'s-empty';
+    return `<tr>
+      <td style="font-size:0.75rem;font-weight:700">${VENDOR_LABEL[p.vendor]||p.vendor}</td>
+      <td><span class="platform-tag ${p.platform}">${p.platform}</span></td>
+      <td style="font-size:0.75rem;color:var(--text3)">${p.category||''}</td>
+      <td>
+        <div style="font-weight:600;font-size:0.85rem">${p.name}</div>
+        ${p.isAllocation?`<span style="font-size:0.68rem;background:var(--amber-dim);color:var(--amber);padding:1px 5px;border-radius:3px;font-weight:700">⚠分配</span>`:''}
+      </td>
+      <td style="font-family:var(--mono);font-size:0.78rem;color:var(--text2)">${p.pn&&p.pn!=='—'?p.pn:'—'}</td>
+      <td style="font-family:var(--mono);font-size:0.78rem;color:var(--text3)">${p.barcode||'—'}</td>
+      <td style="font-size:0.78rem;color:var(--text3)">${p.spec||''}</td>
+      <td style="text-align:right;font-family:var(--mono);font-size:0.82rem">${(p.srp||0).toLocaleString()}</td>
+      <td style="text-align:right;font-family:var(--mono);font-size:0.82rem">${(p.price||0).toLocaleString()}</td>
+      <td style="text-align:right">
+        <input class="inline-num" type="number" min="0" value="${p.moq||0}"
+          onchange="updateProd('${p.vendor}','${p.id}','moq',parseInt(this.value)||0)">
+      </td>
+      <td style="text-align:right">
+        <input class="inline-num" type="number" min="0" value="${p.maxOrder||''}" placeholder="—"
+          onchange="updateProd('${p.vendor}','${p.id}','maxOrder',this.value&&parseInt(this.value)>0?parseInt(this.value):0)">
+      </td>
+      <td>
+        <select class="inline-select ${sCls}" onchange="updateProdAndPM('${p.vendor}','${p.id}','status',this.value)">
+          ${STATUS_OPTS.map(o=>`<option value="${o.v}" ${status===o.v?'selected':''}>${o.l}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <input class="inline-text ${arrival?'filled':''}" type="text" value="${arrival}" placeholder="到貨日"
+          onchange="updateProdAndPM('${p.vendor}','${p.id}','arrival',this.value)">
+      </td>
+      <td style="text-align:center">
+        <button style="background:var(--accent-dim);border:1px solid #bfcffe;color:var(--accent);border-radius:6px;padding:3px 9px;font-family:var(--font);font-size:0.8rem;font-weight:700;cursor:pointer"
+          onclick="openEditModal('${p.vendor}','${p.id}')">✏️</button>
+      </td>
+      <td><button class="btn-del" onclick="deleteProd('${p.vendor}','${p.id}')">刪除</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function updateProd(vendor,pid,field,value){
+  if(products[vendor]&&products[vendor][pid]) products[vendor][pid][field]=value;
+  await fbDB.ref(`products/${vendor}/${pid}`).update({[field]:value});
+  showToast('已更新','green');
+}
+async function updateProdAndPM(vendor,pid,field,value){
+  await Promise.all([fbDB.ref(`products/${vendor}/${pid}`).update({[field]:value}),fbDB.ref(`pmData/${pid}`).update({[field]:value})]);
+  if(products[vendor]&&products[vendor][pid]) products[vendor][pid][field]=value;
+  if(!pmData[pid]) pmData[pid]={}; pmData[pid][field]=value;
+  showToast('已更新','green');
+}
+async function deleteProd(vendor,pid){
+  if(!confirm('確定刪除此品項？')) return;
+  await fbDB.ref(`products/${vendor}/${pid}`).remove();
+  if(products[vendor]) delete products[vendor][pid];
+  renderProducts(); showToast('已刪除','red');
+}
+async function addProduct(){
+  const vendor=getVal('np-vendor'),name=getVal('np-name').trim();
+  if(!name){alert('品名為必填');return;}
+  const id=vendor+'_'+Date.now();
+  const prod={id,pn:getVal('np-pn')||'—',platform:getVal('np-platform'),category:getVal('np-category'),
+    barcode:getVal('np-barcode'),spec:getVal('np-spec'),name,
+    srp:parseInt(getVal('np-srp'))||0,price:parseInt(getVal('np-price'))||0,
+    priceSpecial:parseInt(getVal('np-price-special'))||0,
+    moq:parseInt(getVal('np-moq'))||0,maxOrder:null,
+    arrival:getVal('np-arrival'),status:getVal('np-status'),
+    isAllocation:getVal('np-alloc')==='true'};
+  await fbDB.ref(`products/${vendor}/${id}`).set(prod);
+  if(!products[vendor]) products[vendor]={};
+  products[vendor][id]=prod;
+  renderProducts(); populateCategoryFilters(); showToast('品項已新增','green');
+  ['np-pn','np-barcode','np-name','np-spec','np-srp','np-price','np-price-special','np-moq','np-arrival'].forEach(i=>{const el=getEl(i);if(el)el.value='';});
+}
+
+// ── MOQ 回填 ─────────────────────────────────────────────────────────────────
+function renderMOQ(){
+  const rows=getAllProds({vendor:getVal('moq-vendor'),platform:getVal('moq-platform'),category:getVal('moq-category'),search:getVal('moq-search')});
+  getEl('moq-count').textContent=rows.length+' 項';
+  const statusOpts=STATUS_OPTS.map(o=>`<option value="${o.v}">${o.l}</option>`).join('');
+  getEl('moq-tbody').innerHTML=rows.map(p=>{
+    const total=getTotalOrders(p.id);
+    const pm=pmData[p.id]||{};
+    const ordered=pm.vendorOrdered||'';
+    const arrival=pm.arrival||p.arrival||'';
+    const status=(pm.status!==undefined?pm.status:p.status)??'';
+    const pct=p.moq>0?Math.min(100,Math.round(total/p.moq*100)):0;
+    const pCls=total===0?'prog-zero':pct>=100?'prog-ok':'prog-low';
+    const remaining=ordered!==''?Math.max(0,parseInt(ordered)-total):'—';
+    const remColor=remaining==='—'?'var(--text3)':remaining>0?'var(--green)':'var(--red)';
+    const sCls=STATUS_MAP[status]?.cls||'s-empty';
+    return `<tr>
+      <td style="font-size:0.75rem;font-weight:700">${VENDOR_LABEL[p.vendor]||p.vendor}</td>
+      <td><span class="platform-tag ${p.platform}">${p.platform}</span></td>
+      <td style="font-size:0.75rem;color:var(--text3)">${p.category||''}</td>
+      <td>
+        <div style="font-weight:600;font-size:0.85rem">${p.name}</div>
+        ${p.barcode?`<div style="font-family:var(--mono);font-size:0.7rem;color:var(--text3)">國條:${p.barcode}</div>`:''}
+        ${p.isAllocation?`<span style="font-size:0.68rem;background:var(--amber-dim);color:var(--amber);padding:1px 5px;border-radius:3px;font-weight:700">⚠分配</span>`:''}
+      </td>
+      <td style="text-align:right;font-family:var(--mono)">${p.moq||0}</td>
+      <td style="text-align:right;font-family:var(--mono);font-weight:700;color:${total>=(p.moq||0)&&total>0?'var(--green)':total>0?'var(--amber)':'var(--text3)'}">${total}</td>
+      <td>
+        <div class="prog-wrap"><div class="prog-bar ${pCls}" style="width:${pct}%"></div></div>
+        <div style="font-size:0.65rem;color:var(--text3);margin-top:2px">${pct}%</div>
+      </td>
+      <td style="text-align:right">
+        <input class="inline-num ${ordered!==''?'filled':''}" type="number" min="0" value="${ordered}" placeholder="—"
+          onchange="setPMField('${p.id}','vendorOrdered',this.value)">
+      </td>
+      <td style="text-align:right;font-family:var(--mono);font-weight:700;color:${remColor}">${remaining}</td>
+      <td>
+        <select class="inline-select ${sCls}" onchange="setPMField('${p.id}','status',this.value)">
+          ${STATUS_OPTS.map(o=>`<option value="${o.v}" ${status===o.v?'selected':''}>${o.l}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <input class="inline-text ${arrival?'filled':''}" type="text" value="${arrival}" placeholder="2025/7/24"
+          onchange="setPMField('${p.id}','arrival',this.value)">
+      </td>
+    </tr>`;
+  }).join('');
+}
+async function setPMField(pid,field,value){
+  if(!pmData[pid]) pmData[pid]={};
+  pmData[pid][field]=value;
+  await fbDB.ref(`pmData/${pid}`).update({[field]:value});
+  for(const[vendor,prods]of Object.entries(products)){if(prods[pid]){await fbDB.ref(`products/${vendor}/${pid}`).update({[field]:value});break;}}
+  showToast('已儲存','green');
+}
+
+// ── 通路管理 ─────────────────────────────────────────────────────────────────
+function renderDealers(){
+  const dealerArr=Object.entries(dealers);
+  getEl('dealer-count-badge').textContent=dealerArr.length+' 個通路';
+  getEl('dealers-tbody').innerHTML=dealerArr.map(([id,d])=>{
+    const link=getDealerLink(d);
+    return `<tr>
+      <td><strong>${d.name}</strong></td>
+      <td><code style="font-family:var(--mono);font-size:0.88rem">${d.code||'—'}</code></td>
+      <td>${d.sales}</td>
+      <td><code style="font-family:var(--mono);font-size:0.82rem;background:var(--accent-dim);color:var(--accent);padding:2px 8px;border-radius:4px;font-weight:700">${((d.code||'')+'2025').toUpperCase()}</code></td>
+      <td style="display:flex;gap:6px;align-items:center">
+        <select style="font-family:var(--font);font-size:0.82rem;border:1px solid var(--border);border-radius:5px;padding:3px 6px;background:#fff;outline:none" onchange="updateDealerSales('${id}',this.value)">
+          ${salesList.map(s=>`<option ${d.sales===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+        <button class="btn-del" onclick="deleteDealer('${id}')">刪除</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+async function addDealer(){
+  const name=getVal('nd-name').trim(),code=getVal('nd-code').trim().toUpperCase(),sales=getVal('nd-sales');
+  if(!name||!code){alert('名稱和代碼為必填');return;}
+  const id=name.toLowerCase().replace(/\s+/g,'_')+'_'+Date.now();
+  const d={name,code,sales};
+  await fbDB.ref(`dealers/${id}`).set(d);
+  dealers[id]=d; renderDealers(); populateReportFilters();
+  getEl('nd-name').value='';getEl('nd-code').value='';
+  showToast('通路已新增','green');
+}
+async function deleteDealer(id){
+  if(!confirm('確定刪除此通路？')) return;
+  await fbDB.ref(`dealers/${id}`).remove();
+  delete dealers[id]; renderDealers(); populateReportFilters();
+  showToast('已刪除','red');
+}
+async function updateDealerSales(id,sales){
+  dealers[id].sales=sales;
+  await fbDB.ref(`dealers/${id}`).update({sales});
+  showToast('業務已更新','green');
+}
+
+// ── 業務管理 ─────────────────────────────────────────────────────────────────
+function renderSalesTab(){
+  // 業務列表
+  getEl('sales-list').innerHTML=salesList.map(s=>
+    `<div style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px">
+      <strong>${s}</strong>
+      <button onclick="removeSalesPerson('${s}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.85rem;font-weight:700">✕</button>
+    </div>`).join('');
+  // 轄區一覽
+  const bySales={};
+  Object.entries(dealers).forEach(([id,d])=>{
+    if(!bySales[d.sales]) bySales[d.sales]={dealers:[],qty:0,moqLow:0};
+    const dOrders=orders[id]||{};
+    let dqty=Object.values(dOrders).reduce((s,o)=>s+(o?.qty||0),0);
+    bySales[d.sales].dealers.push({id,...d});
+    bySales[d.sales].qty+=dqty;
+  });
+  const allProds=getAllProds();
+  allProds.forEach(p=>{
+    const total=getTotalOrders(p.id);
+    if(total>0&&total<(p.moq||0)){
+      Object.values(dealers).forEach(d=>{
+        const dO=(orders[Object.keys(dealers).find(k=>dealers[k]===d)]||{})[p.id];
+        if(dO?.qty>0&&bySales[d.sales]) bySales[d.sales].moqLow++;
+      });
+    }
+  });
+  getEl('sales-tbody').innerHTML=salesList.map(s=>{
+    const data=bySales[s]||{dealers:[],qty:0,moqLow:0};
+    return `<tr>
+      <td><strong>${s}</strong></td>
+      <td style="text-align:right;font-family:var(--mono);font-weight:600">${data.dealers.length}</td>
+      <td style="text-align:right;font-family:var(--mono);font-weight:700;color:var(--green)">${data.qty.toLocaleString()}</td>
+      <td style="text-align:right;font-family:var(--mono);font-weight:700;color:${data.moqLow>0?'var(--red)':'var(--text3)'}">${data.moqLow}</td>
+      <td style="font-size:0.8rem;color:var(--text2)">${data.dealers.map(d=>d.name).join('、')}</td>
+    </tr>`;
+  }).join('');
+}
+function addSalesPerson(){
+  const name=getVal('new-sales-name').trim();
+  if(!name||salesList.includes(name)) return;
+  salesList.push(name); getEl('new-sales-name').value='';
+  renderSalesTab(); showToast(name+' 已新增','green');
+}
+function removeSalesPerson(name){
+  if(!confirm('確定移除業務 '+name+'？')) return;
+  salesList=salesList.filter(s=>s!==name);
+  renderSalesTab();
+}
+
+// ── 通路連結 ─────────────────────────────────────────────────────────────────
+function getDealerLink(d){ return location.href.replace(/\/[^/]*$/,'/')+`dealer.html?code=${((d.code||'')+'2025').toUpperCase()}`;}
+function renderLinks(){
+  getEl('links-tbody').innerHTML=Object.entries(dealers).map(([id,d])=>{
+    const link=getDealerLink(d);
+    return `<tr>
+      <td><strong>${d.name}</strong></td><td>${d.sales}</td>
+      <td><code style="font-family:var(--mono);font-size:0.82rem;background:var(--accent-dim);color:var(--accent);padding:2px 8px;border-radius:4px;font-weight:700">${((d.code||'')+'2025').toUpperCase()}</code></td>
+      <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><a href="${link}" target="_blank" style="color:var(--accent);font-size:0.78rem;font-family:var(--mono)">${link}</a></td>
+      <td><button onclick="copyLink('${link}','${d.name}')" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-family:var(--font);font-size:0.8rem;font-weight:700;cursor:pointer">複製</button></td>
+    </tr>`;
+  }).join('');
+}
+function copyLink(link,name){ navigator.clipboard.writeText(link).then(()=>showToast('已複製 '+name+' 的連結','green'));}
+function copyAllLinks(){
+  const text='【遊戲片追貨平台】各通路專屬連結\n\n'+Object.values(dealers).map(d=>`${d.name}（${d.sales}）\n${getDealerLink(d)}`).join('\n\n');
+  navigator.clipboard.writeText(text).then(()=>showToast('全部連結已複製','green'));
+}
+function exportLinksCSV(){
+  const rows=[['通路名稱','業務','通路代碼','專屬連結'].join(','),...Object.values(dealers).map(d=>[d.name,d.sales,((d.code||'')+'2025').toUpperCase(),getDealerLink(d)].join(','))];
+  dlCSV(rows.join('\n'),'通路專屬連結.csv');
+}
+
+// ── 週期設定 ─────────────────────────────────────────────────────────────────
+function renderWindowForm(){
+  getEl('wk-week').value=winData.week||'';
+  getEl('wk-open').value=String(winData.open!==false);
+  if(winData.startTime) getEl('wk-start').value=winData.startTime;
+  if(winData.endTime)   getEl('wk-end').value=winData.endTime;
+  renderWindowStatus();
+  updateWkPreview();
+}
+function updateWkPreview(){
+  const week=getVal('wk-week'),start=getVal('wk-start'),end=getVal('wk-end');
+  const prev=getEl('wk-preview'),prevTxt=getEl('wk-preview-text');
+  if(!prev) return;
+  if(week||start||end){
+    prev.style.display='block';
+    const fmt=v=>v?new Date(v).toLocaleString('zh-TW',{month:'numeric',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'}):'—';
+    prevTxt.textContent=(week?`週次：${week}  `:'')+(start?`開始：${fmt(start)}  `:'')+(end?`截止：${fmt(end)}`:'');
+  } else { prev.style.display='none'; }
+}
+function renderWindowStatus(){
+  const open=winData.open!==false;
+  const dot=getEl('win-dot'); if(dot){dot.className='win-dot '+(open?'win-open':'win-closed');}
+  const txt=getEl('win-text'); if(txt) txt.textContent='收單視窗：'+(open?'開放中':'已關閉');
+  const wk=getEl('win-week-display'); if(wk) wk.textContent='週次：'+(winData.week||'—');
+}
+async function saveWindowSettings(){
+  const week=getVal('wk-week'),open=getVal('wk-open')==='true';
+  const startTime=getVal('wk-start')||'';
+  const endTime=getVal('wk-end')||'';
+  const updates={week,open,startTime,endTime};
+  await fbDB.ref('window').update(updates);
+  winData={...winData,...updates};
+  renderWindowStatus(); showToast('週期設定已儲存','green');
+}
+
+// ── 報表匯出 ─────────────────────────────────────────────────────────────────
+function dlCSV(content, filename){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+content],{type:'text/csv;charset=utf-8'}));
+  a.download=filename; a.click();
+}
+
+function exportLogisticsCSV(){
+  const dids=Object.keys(dealers);
+  const headers=['代理商','平台','類型','品名','AGM P/N','國際條碼','MOQ','已登記總量',...dids.map(d=>dealers[d].name),'向原廠下單量','剩餘可用','到貨日','狀態'].join(',');
+  const rows=[headers];
+  getAllProds().forEach(p=>{
+    const total=getTotalOrders(p.id);
+    const dealerQtys={};
+    Object.entries(orders).forEach(([did,dO])=>{const o=(dO||{})[p.id];if(o?.qty>0)dealerQtys[did]=o.qty;});
+    const pm=pmData[p.id]||{};
+    const ordered=pm.vendorOrdered||'';
+    const arrival=pm.arrival||p.arrival||'';
+    const status=(pm.status!==undefined?pm.status:p.status)||'';
+    const remaining=ordered!==''?Math.max(0,parseInt(ordered)-total):'';
+    rows.push([VENDOR_LABEL[p.vendor]||p.vendor,p.platform,p.category||'',`"${p.name}"`,p.pn||'',p.barcode||'',p.moq||0,total,...dids.map(d=>dealerQtys[d]||0),ordered,remaining,arrival,status].join(','));
+  });
+  dlCSV(rows.join('\n'),`後勤報表_${new Date().toISOString().slice(0,10)}.csv`);
+  showToast('後勤報表已匯出','green');
+}
+
+function exportSalesCSV(){
+  const salesFilter=getVal('report-sales-filter');
+  // 若有篩選業務，只列該業務負責的通路
+  const dids=Object.keys(dealers).filter(id=>!salesFilter||dealers[id].sales===salesFilter);
+  const headers=[
+    '代理商','平台','品名','MOQ',
+    ...dids.map(d=>dealers[d].name+'（'+dealers[d].sales+'）'),
+    '合計數量','MOQ缺口','缺口數量','狀態'
+  ].join(',');
+  const rows=[`業務訂單確認報表  匯出時間：${new Date().toLocaleString('zh-TW')}${salesFilter?'  業務：'+salesFilter:''}`,headers];
+  getAllProds().forEach(p=>{
+    const dealerQtys={};
+    dids.forEach(did=>{const o=(orders[did]||{})[p.id];if(o?.qty>0)dealerQtys[did]=o.qty;});
+    const subtotal=dids.reduce((s,d)=>s+(dealerQtys[d]||0),0);
+    if(subtotal===0&&!dids.some(d=>(orders[d]||{})[p.id]?.qty>0)) return; // 跳過完全無訂單的品項（讓報表精簡）
+    const moqGap=subtotal>0&&subtotal<(p.moq||0)?(p.moq||0)-subtotal:0;
+    const moqLabel=subtotal===0?'無訂單':subtotal>=(p.moq||0)?'✅ 達標':'⚠ 未達MOQ';
+    const pm=pmData[p.id]||{};
+    const status=(pm.status!==undefined?pm.status:p.status)||'';
+    rows.push([
+      VENDOR_LABEL[p.vendor]||p.vendor, p.platform, `"${p.name}"`, p.moq||0,
+      ...dids.map(d=>dealerQtys[d]||0),
+      subtotal, moqLabel, moqGap||'',
+      STATUS_MAP[status]?.l||''
+    ].join(','));
+  });
+  dlCSV(rows.join('\n'),`業務報表_${new Date().toISOString().slice(0,10)}.csv`);
+  showToast('業務報表已匯出','green');
+}
+
+function exportDealerCSV(){
+  const did=getVal('report-dealer-filter');
+  if(!did){alert('請先選擇通路');return;}
+  const dealer=dealers[did];
+  const dOrders=orders[did]||{};
+  const headers=['平台','品名','國際條碼','SRP（含稅）','出貨價（未稅）','訂購數量','狀態'].join(',');
+  const rows=[
+    `通路：${dealer.name}  業務：${dealer.sales}  匯出時間：${new Date().toLocaleString('zh-TW')}`,
+    headers
+  ];
+  let totalQty=0, totalItems=0;
+  getAllProds().forEach(p=>{
+    const o=dOrders[p.id];
+    if(!o?.qty) return;
+    const pm=pmData[p.id]||{};
+    const status=(pm.status!==undefined?pm.status:p.status)||'';
+    rows.push([
+      p.platform,
+      `"${p.name}"`,
+      p.barcode||'',
+      (p.srp||0).toLocaleString(),
+      (p.price||0).toLocaleString(),
+      o.qty,
+      STATUS_MAP[status]?.l||''
+    ].join(','));
+    totalItems++; totalQty+=o.qty;
+  });
+  rows.push(''); // 空行
+  rows.push(`合計品項：${totalItems},,,,,${totalQty},`);
+  dlCSV(rows.join('\n'),`${dealer.name}_訂單報表_${new Date().toISOString().slice(0,10)}.csv`);
+  showToast(dealer.name+' 報表已匯出','green');
+}
+
+// ── 批次匯入 ─────────────────────────────────────────────────────────────────
+const importZone=document.getElementById('import-zone');
+importZone.addEventListener('dragover',e=>{e.preventDefault();importZone.classList.add('dragover');});
+importZone.addEventListener('dragleave',()=>importZone.classList.remove('dragover'));
+importZone.addEventListener('drop',e=>{e.preventDefault();importZone.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)parseImportFile(f);});
+
+function handleImportFile(input){if(input.files[0]) parseImportFile(input.files[0]);}
+
+function parseImportFile(file){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    let text=e.target.result;
+    if(text.charCodeAt(0)===0xFEFF) text=text.slice(1); // strip BOM
+    const lines=text.split('\n').map(l=>l.trim()).filter(l=>l);
+    if(lines.length<2){alert('CSV 格式錯誤，至少需要標題列和一行資料');return;}
+    const header=lines[0].split(',');
+    importData=lines.slice(1).map(line=>{
+      const vals=line.split(',');
+      return{
+        vendor:    vals[0]?.trim()||'BNE',
+        platform:  vals[1]?.trim()||'NS',
+        category:  vals[2]?.trim()||'軟體',
+        pn:        vals[3]?.trim()||'—',
+        barcode:   vals[4]?.trim()||'',
+        name:      vals[5]?.trim().replace(/^"|"$/g,'')||'',
+        spec:      vals[6]?.trim()||'',
+        srp:       parseInt(vals[7])||0,
+        price:     parseInt(vals[8])||0,
+        priceSpecial:parseInt(vals[9])||0,
+        moq:       parseInt(vals[10])||0,
+        arrival:   vals[11]?.trim()||'',
+        status:    vals[12]?.trim()||'',
+        isAllocation:(vals[13]?.trim().toLowerCase()==='true'),
+      };
+    }).filter(p=>p.name);
+    // 顯示預覽
+    getEl('import-summary').textContent=`共解析到 ${importData.length} 筆有效品項，請確認後匯入`;
+    getEl('import-preview-table').innerHTML=`
+      <thead style="background:var(--surface2)"><tr>
+        ${['代理商','平台','類型','品名','P/N','條碼','SRP','出貨價','MOQ','到貨日','狀態'].map(h=>`<th style="padding:6px 8px;font-size:0.72rem;font-weight:700;color:var(--text3);text-align:left">${h}</th>`).join('')}
+      </tr></thead>
+      <tbody>${importData.slice(0,20).map(p=>`<tr>
+        <td style="padding:5px 8px;font-size:0.8rem">${p.vendor}</td>
+        <td style="padding:5px 8px"><span class="platform-tag ${p.platform}" style="font-size:0.68rem;padding:1px 5px">${p.platform}</span></td>
+        <td style="padding:5px 8px;font-size:0.78rem;color:var(--text3)">${p.category}</td>
+        <td style="padding:5px 8px;font-size:0.82rem;font-weight:600">${p.name}</td>
+        <td style="padding:5px 8px;font-family:var(--mono);font-size:0.75rem;color:var(--text2)">${p.pn}</td>
+        <td style="padding:5px 8px;font-family:var(--mono);font-size:0.75rem;color:var(--text3)">${p.barcode}</td>
+        <td style="padding:5px 8px;font-family:var(--mono);font-size:0.78rem;text-align:right">${p.srp.toLocaleString()}</td>
+        <td style="padding:5px 8px;font-family:var(--mono);font-size:0.78rem;text-align:right">${p.price.toLocaleString()}</td>
+        <td style="padding:5px 8px;font-family:var(--mono);font-size:0.78rem;text-align:right">${p.moq}</td>
+        <td style="padding:5px 8px;font-size:0.78rem;color:var(--amber)">${p.arrival}</td>
+        <td style="padding:5px 8px;font-size:0.78rem">${STATUS_MAP[p.status]?.l||'—'}</td>
+      </tr>`).join('')}
+      ${importData.length>20?`<tr><td colspan="11" style="padding:8px;text-align:center;color:var(--text3);font-size:0.82rem">…另 ${importData.length-20} 筆</td></tr>`:''}</tbody>`;
+    getEl('import-preview').classList.remove('hidden');
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+async function confirmImport(){
+  if(!importData.length) return;
+  const updates={};
+  importData.forEach(p=>{
+    // 處理代理商名稱對應
+    let vendor=p.vendor.toUpperCase();
+    if(vendor==='GSE'||vendor==='GS') vendor='GS';
+    if(vendor==='BNE') vendor='BNE';
+    if(vendor==='SONY') vendor='SONY';
+    if(!['BNE','GS','SONY'].includes(vendor)) vendor='BNE';
+    const id=vendor+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+    const prod={id,pn:p.pn,platform:p.platform,category:p.category,barcode:p.barcode,spec:p.spec,name:p.name,srp:p.srp,price:p.price,priceSpecial:p.priceSpecial,moq:p.moq,maxOrder:null,arrival:p.arrival,status:p.status,isAllocation:p.isAllocation};
+    updates[`products/${vendor}/${id}`]=prod;
+    if(!products[vendor]) products[vendor]={};
+    products[vendor][id]=prod;
+  });
+  await fbDB.ref().update(updates);
+  cancelImport(); renderProducts(); populateCategoryFilters();
+  showToast(`✅ 已匯入 ${importData.length} 筆品項`,'green');
+}
+function cancelImport(){
+  importData=[]; getEl('import-preview').classList.add('hidden'); getEl('import-file').value='';
+}
+
+// ── 危險操作 ─────────────────────────────────────────────────────────────────
+async function clearAllOrders(){
+  if(!confirm('確定清除本週所有訂單？此操作無法復原！')) return;
+  if(!confirm('再次確認：所有通路的訂購紀錄將被清空。')) return;
+  await fbDB.ref('orders').remove();
+  orders={}; buildAllRows(); renderOverview(); renderStats();
+  showToast('所有訂單已清除','red');
+}
+async function seedDB(){
+  if(!confirm('這會覆蓋 Firebase 的產品資料，確定繼續？')) return;
+  showToast('初始化中…請稍候','amber');
+  // 直接把目前 products 物件重新寫入（或可在此放預設資料）
+  await fbDB.ref('products').set(products);
+  showToast('✅ 資料庫已重新初始化','green');
+}
+
+// ── 編輯品項 Modal ───────────────────────────────────────────────────────────
+let _editVendor='', _editPid='';
+function openEditModal(vendor, pid){
+  _editVendor=vendor; _editPid=pid;
+  const p=(products[vendor]||{})[pid]; if(!p) return;
+  getEl('ep-name').value=p.name||'';
+  getEl('ep-vendor').value=vendor;
+  getEl('ep-platform').value=p.platform||'NS';
+  getEl('ep-category').value=p.category||'軟體';
+  getEl('ep-pn').value=p.pn&&p.pn!=='—'?p.pn:'';
+  getEl('ep-barcode').value=p.barcode||'';
+  getEl('ep-spec').value=p.spec||'';
+  getEl('ep-srp').value=p.srp||0;
+  getEl('ep-price').value=p.price||0;
+  getEl('ep-price-special').value=p.priceSpecial||0;
+  getEl('ep-moq').value=p.moq||0;
+  getEl('ep-max').value=p.maxOrder||'';
+  getEl('ep-alloc').value=String(p.isAllocation||false);
+  getEl('edit-modal').classList.remove('hidden');
+}
+function closeEditModal(){getEl('edit-modal').classList.add('hidden');}
+async function saveEditModal(){
+  const vendor=_editVendor, pid=_editPid;
+  if(!vendor||!pid) return;
+  const updates={
+    name:getEl('ep-name').value.trim(),
+    platform:getEl('ep-platform').value,
+    category:getEl('ep-category').value,
+    pn:getEl('ep-pn').value.trim()||'—',
+    barcode:getEl('ep-barcode').value.trim(),
+    spec:getEl('ep-spec').value.trim(),
+    srp:parseInt(getEl('ep-srp').value)||0,
+    price:parseInt(getEl('ep-price').value)||0,
+    priceSpecial:parseInt(getEl('ep-price-special').value)||0,
+    moq:parseInt(getEl('ep-moq').value)||0,
+    maxOrder:getEl('ep-max').value&&parseInt(getEl('ep-max').value)>0?parseInt(getEl('ep-max').value):0,
+    isAllocation:getEl('ep-alloc').value==='true',
+  };
+  if(!updates.name){alert('品名不能為空');return;}
+  await fbDB.ref(`products/${vendor}/${pid}`).update(updates);
+  if(!products[vendor]) products[vendor]={};
+  Object.assign(products[vendor][pid], updates);
+  closeEditModal(); renderProducts(); showToast('品項已更新','green');
 }
 
 function showToast(msg,type='green'){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.className=`toast toast-${type}`;t.classList.remove('hidden');
-  setTimeout(()=>t.classList.add('hidden'),3500);
-}
-
-function showInvalidCode(code){
-  document.body.innerHTML=`
-  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;font-family:'Noto Sans TC',sans-serif;background:#f0f2f5">
-    <div style="max-width:400px;text-align:center;background:#fff;border-radius:16px;padding:2.5rem;box-shadow:0 4px 20px rgba(0,0,0,0.1)">
-      <div style="font-size:4rem;margin-bottom:1rem">🔒</div>
-      <h2 style="margin-bottom:.75rem;font-size:1.4rem;font-weight:900;color:#1a2030">連結無效或已過期</h2>
-      <p style="font-size:.95rem;color:#3d4a5c;line-height:1.7">請向您的業務確認最新的通路專屬連結。</p>
-      ${code&&code!=='未帶入通路代碼'?`<p style="margin-top:1rem;font-size:.8rem;font-family:monospace;color:#7a8699">code: ${code}</p>`:''}
-    </div>
-  </div>`;
+  const t=getEl('toast'); t.textContent=msg;
+  t.className='toast toast-'+type; t.classList.remove('hidden');
+  setTimeout(()=>t.classList.add('hidden'),3000);
 }
 </script>
 </body>
