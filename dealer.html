@@ -62,8 +62,8 @@ nav{background:#fff;border-bottom:2px solid var(--border);padding:0 1.5rem;heigh
 
 /* ── PRODUCT TABLE ── */
 .prod-wrap{background:#fff;border:2px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow:hidden}
-.prod-thead{display:grid;grid-template-columns:72px 1fr 100px 100px 100px 80px 90px;gap:12px;padding:10px 18px;background:var(--surface2);border-bottom:1px solid var(--border)}
-.prod-thead span{font-size:0.78rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em}
+.prod-thead{display:grid;grid-template-columns:72px 1fr 100px 100px 100px 80px 90px;gap:12px;padding:12px 18px;background:#e8edf5;border-bottom:2px solid var(--border2)}
+.prod-thead span{font-size:0.82rem;font-weight:900;color:var(--text);text-transform:uppercase;letter-spacing:0.04em;text-align:center}
 .prod-row{display:grid;grid-template-columns:72px 1fr 100px 100px 100px 80px 90px;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);transition:background 0.1s}
 .prod-row:last-child{border-bottom:none}
 .prod-row:hover{background:var(--surface2)}
@@ -559,12 +559,12 @@ function renderProducts(){
     `<div class="prod-wrap">
       <div class="prod-thead">
         <span>平台</span>
-        <span>品名</span>
-        <span style="text-align:right">SRP<br><small style="font-weight:400;opacity:0.7">含稅</small></span>
-        <span style="text-align:right">出貨價<br><small style="font-weight:400;opacity:0.7">含稅</small></span>
-        <span style="text-align:right">出貨價<br><small style="font-weight:400;opacity:0.7">未稅</small></span>
-        <span style="text-align:right">折扣</span>
-        <span style="text-align:right">訂購數量</span>
+        <span style="text-align:left">品名</span>
+        <span>SRP<br><small style="font-weight:400;color:var(--text2);font-size:0.72rem">含稅</small></span>
+        <span>出貨價<br><small style="font-weight:400;color:var(--text2);font-size:0.72rem">含稅</small></span>
+        <span>出貨價<br><small style="font-weight:400;color:var(--text2);font-size:0.72rem">未稅</small></span>
+        <span>折扣</span>
+        <span>訂購數量</span>
       </div>
       ${rows||`<div style="padding:2rem;text-align:center;color:var(--text3)">此分類目前無品項</div>`}
     </div>`;
