@@ -62,11 +62,11 @@ nav{background:#fff;border-bottom:2px solid var(--border);padding:0 1.5rem;heigh
 
 /* ── PRODUCT TABLE ── */
 .prod-wrap{background:#fff;border:2px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow:hidden}
-.prod-thead{display:grid;grid-template-columns:72px 1fr 100px 100px 100px 60px 170px 90px;gap:0;padding:0;background:var(--surface2);border-bottom:2px solid var(--border2)}
+.prod-thead{display:grid;grid-template-columns:72px minmax(200px,1fr) 90px 90px 90px 60px 150px 90px;gap:0;padding:0;background:var(--surface2);border-bottom:2px solid var(--border2)}
 .prod-thead>*{padding:8px 12px;border-right:1px solid var(--border);text-align:center}
 .prod-thead>*:last-child{border-right:none}
 .prod-thead span{font-size:0.82rem;font-weight:900;color:var(--text);text-transform:uppercase;letter-spacing:0.04em;text-align:center}
-.prod-row{display:grid;grid-template-columns:72px 1fr 100px 100px 100px 60px 170px 90px;gap:0;align-items:stretch;padding:0;border-bottom:1px solid var(--border);transition:background 0.1s}
+.prod-row{display:grid;grid-template-columns:72px minmax(200px,1fr) 90px 90px 90px 60px 150px 90px;gap:0;align-items:stretch;padding:0;border-bottom:1px solid var(--border);transition:background 0.1s}
 .prod-row>*{padding:10px 12px;vertical-align:middle}
 .prod-row:last-child{border-bottom:none}
 .prod-row:hover{background:var(--surface2)}
@@ -550,12 +550,12 @@ function renderProducts(){
       <div class="prod-thead">
         <span>平台</span>
         <span style="text-align:left">品名</span>
-        <span style="text-align:right">SRP<br><small style="font-weight:400;color:var(--text2);font-size:0.72rem">含稅</small></span>
-        <span style="text-align:right">出貨價<br><small style="font-weight:400;color:var(--text2);font-size:0.72rem">含稅</small></span>
-        <span style="text-align:right">出貨價<br><small style="font-weight:400;color:var(--text2);font-size:0.72rem">未稅</small></span>
+        <span>SRP<br><small style="font-weight:400;font-size:0.72rem;opacity:0.7">含稅</small></span>
+        <span>出貨價<br><small style="font-weight:400;font-size:0.72rem;opacity:0.7">含稅</small></span>
+        <span>出貨價<br><small style="font-weight:400;font-size:0.72rem;opacity:0.7">未稅</small></span>
         <span>折扣</span>
-        <span style="text-align:left">備註</span>
-        <span style="text-align:right">訂購數量</span>
+        <span>備註</span>
+        <span>訂購數量</span>
       </div>
       ${rows||`<div style="padding:2rem;text-align:center;color:var(--text3)">此分類目前無品項</div>`}
     </div>`;
