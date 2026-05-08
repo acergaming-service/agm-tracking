@@ -62,9 +62,9 @@ nav{background:#fff;border-bottom:2px solid var(--border);padding:0 1.5rem;heigh
 
 /* ── PRODUCT TABLE ── */
 .prod-wrap{background:#fff;border:2px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow:hidden}
-.prod-thead{display:grid;grid-template-columns:90px 1fr 120px 170px;gap:12px;padding:10px 18px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.prod-thead{display:grid;grid-template-columns:90px 1fr 140px 100px;gap:12px;padding:10px 18px;background:var(--surface2);border-bottom:1px solid var(--border)}
 .prod-thead span{font-size:0.78rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em}
-.prod-row{display:grid;grid-template-columns:90px 1fr 120px 170px;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);transition:background 0.1s}
+.prod-row{display:grid;grid-template-columns:90px 1fr 140px 100px;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);transition:background 0.1s}
 .prod-row:last-child{border-bottom:none}
 .prod-row:hover{background:var(--surface2)}
 
@@ -105,10 +105,8 @@ nav{background:#fff;border-bottom:2px solid var(--border);padding:0 1.5rem;heigh
 .price-special{font-size:0.78rem;color:var(--green);font-weight:600;margin-top:2px}
 
 /* 數量控制 */
-.qty-ctrl{display:flex;align-items:center;gap:8px;justify-content:flex-end}
-.qty-btn{width:36px;height:36px;background:#fff;border:2px solid var(--border);border-radius:8px;color:var(--text);font-size:1.2rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0}
-.qty-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
-.qty-input{width:60px;background:#fff;border:2px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:1.05rem;font-weight:600;text-align:center;padding:6px 4px;outline:none;transition:all 0.15s}
+.qty-ctrl{display:flex;align-items:center;justify-content:flex-end}
+.qty-input{width:80px;background:#fff;border:2px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:1.05rem;font-weight:600;text-align:center;padding:8px 6px;outline:none;transition:all 0.15s}
 .qty-input:focus{border-color:var(--accent)}
 .qty-input.has-value{border-color:var(--green);background:var(--green-dim);color:var(--green)}
 
@@ -474,9 +472,7 @@ function renderProducts(){
     // 庫存不顯示給經銷商
     let stockHtml='';
 
-    // 優惠價（新出貨價）
-    const specialHtml=(p.priceSpecial&&p.priceSpecial>0&&p.priceSpecial!==p.price)?
-      `<div class="price-special">優惠價 NT$${p.priceSpecial.toLocaleString()}</div>`:'';
+
 
     return `<div class="prod-row">
       <div>
@@ -493,8 +489,7 @@ function renderProducts(){
           const moqVal=_pm.moq||p.moq||0;
           return `
           <div class="prod-meta" style="margin-top:5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            ${!arrival?`<span style="width:8px;height:8px;border-radius:50%;background:${cfg.dot};display:inline-block;flex-shrink:0"></span>
-            <span style="font-size:0.85rem;font-weight:600;color:${cfg.color}">${cfg.label}</span>`:''}
+            ${!arrival&&cfg.label&&cfg.label!=='—'?`<span style="font-size:0.82rem;color:${cfg.color}">${cfg.label}</span>`:''}
             ${p.spec?`<span style="font-size:0.75rem;color:var(--text3);background:var(--surface2);padding:1px 6px;border-radius:4px">${p.spec}</span>`:''}
           </div>
           <div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
@@ -504,19 +499,10 @@ function renderProducts(){
             ${(()=>{
               const tag=_pm.priceTag||p.priceTag||'';
               if(!tag) return '';
-              const tagColors={
-                '特價優惠':'background:#dc2626;color:#fff',
-                '庫存出清':'background:#d97706;color:#fff',
-                '買1送1':'background:#7c3aed;color:#fff',
-                '附贈品':'background:#16a34a;color:#fff',
-                '4月優惠':'background:#dc2626;color:#fff',
-                '免費升級PS5':'background:#1d6ef5;color:#fff',
-                '價格調整':'background:#3d4a5c;color:#fff',
-              };
-              const style=tagColors[tag]||'background:#3d4a5c;color:#fff';
-              return `<span style="font-size:0.78rem;font-weight:700;${style};padding:2px 9px;border-radius:6px;display:inline-block">${tag}</span>`;
+              return `<span style="font-size:0.82rem;font-weight:700;color:var(--red)">【${tag}】</span>`;
             })()}
-            ${p.isAllocation?`<span style="font-size:0.78rem;font-weight:700;background:var(--amber-dim);color:var(--amber);padding:2px 9px;border-radius:6px;border:1px solid var(--amber-b)">⚠ 分配出貨，數量由 AGM 決定</span>`:''}
+            ${p.isAllocation?`<span style="font-size:0.82rem;color:var(--amber)">⚠ 分配出貨，數量由 AGM 決定</span>`:''}
+            ${(p.giftItem||'')?`<div style="font-size:0.82rem;color:var(--text2);margin-top:3px">📦 附贈：${p.giftItem}</div>`:''}
             ${(()=>{
               if(!p.maxOrder||typeof p.maxOrder!=='number'||p.maxOrder<=0) return '';
               const gTotal=(window._globalTotals||{})[p.id]||0;
@@ -534,24 +520,26 @@ function renderProducts(){
               </div>`;
             })()}
           </div>
-          ${(()=>{const note=_pm.displayNote||p.displayNote||'';return note?`<div style="margin-top:4px;font-size:0.8rem;color:var(--text2);font-style:italic">${note}</div>`:'';})()}
+          ${(()=>{const note=_pm.displayNote||p.displayNote||'';return note?`<div style="margin-top:3px;font-size:0.82rem;color:var(--text2)">${note}</div>`:'';})()}
           ${p.barcode?`<div style="margin-top:5px">
             <span style="font-family:var(--mono);font-size:0.82rem;color:var(--text2);letter-spacing:0.04em"><span style="color:var(--text3)">國條:</span>${p.barcode}</span>
           </div>`:''}`;
         })()}
       </div>
       <div class="price-col">
-        <div class="price-main">NT$${(p.price||0).toLocaleString()}</div>
-        ${specialHtml}
+        ${p.priceTax&&p.priceTax>0?`<div class="price-main">NT$${p.priceTax.toLocaleString()}<span style="font-size:0.7rem;color:var(--text3);margin-left:3px">含稅</span></div>`
+          :`<div class="price-main">NT$${(p.price||0).toLocaleString()}<span style="font-size:0.7rem;color:var(--text3);margin-left:3px">未稅</span></div>`}
+        ${p.priceSpecial&&p.priceSpecial>0?`<div style="font-size:0.8rem;color:var(--red);font-weight:700">優惠 NT$${p.priceSpecial.toLocaleString()}</div>`:''}
+        ${p.price&&p.priceTax?`<div class="price-srp">未稅 ${p.price.toLocaleString()}</div>`:''}
         <div class="price-srp">SRP ${(p.srp||0).toLocaleString()}</div>
       </div>
       <div class="qty-ctrl">
         ${disabled
           ?`<span style="font-size:0.9rem;color:var(--text3);font-weight:600">${isWindowOpen?'不可訂':'已結算'}</span>`
-          :`<button class="qty-btn" onclick="changeQty('${p.id}',-1)">−</button>
-            <input class="qty-input ${qty>0?'has-value':''}" type="number" min="0" value="${qty}"
-              id="qty-${p.id}" oninput="onQtyInput('${p.id}',this.value)">
-            <button class="qty-btn" onclick="changeQty('${p.id}',1)">+</button>`}
+          :`<input class="qty-input ${qty>0?'has-value':''}" type="number" min="0" value="${qty}"
+              id="qty-${p.id}" placeholder="0"
+              oninput="onQtyInput('${p.id}',this.value)"
+              onfocus="this.select()">`}
       </div>
     </div>`;
   }).join('');
@@ -568,13 +556,6 @@ function renderProducts(){
 }
 
 // ── 訂單操作 ──────────────────────────────────────────────────────────────
-function changeQty(pid,delta){
-  const inp=document.getElementById('qty-'+pid);
-  if(!inp)return;
-  inp.value=Math.max(0,(parseInt(inp.value)||0)+delta);
-  onQtyInput(pid,inp.value);
-}
-
 function onQtyInput(pid,rawVal){
   const qty=Math.max(0,parseInt(rawVal)||0);
   const inp=document.getElementById('qty-'+pid);
