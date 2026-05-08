@@ -35,7 +35,7 @@ nav{background:#fff;border-bottom:2px solid var(--border);padding:0 1.5rem;heigh
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* LAYOUT */
-.container{max-width:1100px;margin:0 auto;padding:1.5rem 1.5rem 100px}
+.container{max-width:1400px;margin:0 auto;padding:1.5rem 1.5rem 100px}
 .page-header{margin-bottom:1.2rem}
 .page-header h1{font-size:1.6rem;font-weight:900;margin-bottom:4px}
 .page-header p{font-size:0.92rem;color:var(--text2)}
@@ -62,11 +62,11 @@ nav{background:#fff;border-bottom:2px solid var(--border);padding:0 1.5rem;heigh
 
 /* ── PRODUCT TABLE ── */
 .prod-wrap{background:#fff;border:2px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow:hidden}
-.prod-thead{display:grid;grid-template-columns:72px minmax(200px,1fr) 90px 90px 90px 60px 150px 90px;gap:0;padding:0;background:var(--surface2);border-bottom:2px solid var(--border2)}
+.prod-thead{display:grid;grid-template-columns:80px minmax(220px,1fr) 105px 105px 105px 65px 160px 100px;gap:0;padding:0;background:var(--surface2);border-bottom:2px solid var(--border2)}
 .prod-thead>*{padding:8px 12px;border-right:1px solid var(--border);text-align:center}
 .prod-thead>*:last-child{border-right:none}
 .prod-thead span{font-size:0.82rem;font-weight:900;color:var(--text);text-transform:uppercase;letter-spacing:0.04em;text-align:center}
-.prod-row{display:grid;grid-template-columns:72px minmax(200px,1fr) 90px 90px 90px 60px 150px 90px;gap:0;align-items:stretch;padding:0;border-bottom:1px solid var(--border);transition:background 0.1s}
+.prod-row{display:grid;grid-template-columns:80px minmax(220px,1fr) 105px 105px 105px 65px 160px 100px;gap:0;align-items:stretch;padding:0;border-bottom:1px solid var(--border);transition:background 0.1s}
 .prod-row>*{padding:10px 12px;vertical-align:middle}
 .prod-row:last-child{border-bottom:none}
 .prod-row:hover{background:var(--surface2)}
@@ -504,12 +504,12 @@ function renderProducts(){
       <div style="text-align:right;font-family:var(--mono);font-size:0.92rem;font-weight:600;display:flex;align-items:center;justify-content:flex-end">
         NT$${p.srp?(p.srp).toLocaleString():'—'}
       </div>
-      <div style="text-align:right;font-family:var(--mono);font-size:0.92rem;font-weight:700;display:flex;align-items:center;justify-content:flex-end">
+      <div style="text-align:right;font-family:var(--mono);font-size:0.92rem;font-weight:700;display:flex;flex-direction:column;align-items:flex-end;justify-content:center">
         ${(()=>{
           const _pm2=pmData[p.id]||{};
           const sp=_pm2.priceSpecial||p.priceSpecial||0;
-          if(sp>0) return `<span style="text-decoration:line-through;color:var(--text3);font-size:0.8rem">NT$${(p.priceTax||0).toLocaleString()}</span><br>NT$${sp.toLocaleString()}`;
-          return `NT$${p.priceTax?(p.priceTax).toLocaleString():'—'}`;
+          if(sp>0&&sp!==p.priceTax) return `<span style="text-decoration:line-through;color:var(--text3);font-size:0.78rem;line-height:1.2">NT$${(p.priceTax||0).toLocaleString()}</span><span>NT$${sp.toLocaleString()}</span>`;
+          return `<span>NT$${p.priceTax?(p.priceTax).toLocaleString():'—'}</span>`;
         })()}
       </div>
       <div style="text-align:right;font-family:var(--mono);font-size:0.92rem;color:var(--text2);display:flex;align-items:center;justify-content:flex-end">
@@ -517,6 +517,7 @@ function renderProducts(){
       </div>
       <div style="text-align:right;font-size:0.85rem;color:var(--text2);display:flex;align-items:center;justify-content:flex-end">
         ${(()=>{
+          if(activeVendor==='SONY') return '—';
           if(!p.srp||!p.priceTax) return '—';
           const pct=Math.round(p.priceTax/p.srp*100);
           return pct+'%';
