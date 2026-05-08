@@ -4,56 +4,60 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>遊戲片追貨平台</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#f0f2f5;--surface:#ffffff;--surface2:#f7f8fa;
-  --border:#d8dde6;--border2:#b8c0cc;
+  --bg:#f0f2f5;--surface:#fff;--surface2:#f7f8fa;--border:#d8dde6;
   --text:#1a2030;--text2:#3d4a5c;--text3:#7a8699;
   --accent:#1d6ef5;--accent-dim:#e8f0fe;
-  --green:#16a34a;--green-dim:#f0faf4;
+  --green:#16a34a;--green-dim:#f0faf4;--green-b:#bbf7d0;
   --red:#dc2626;--red-dim:#fef2f2;
   --amber:#d97706;--amber-dim:#fffbeb;
-  --purple:#7c3aed;--purple-dim:#f5f3ff;
-  --font:'Noto Sans TC',sans-serif;
-  --radius:14px;--radius-sm:10px;
+  --purple:#7c3aed;--purple-dim:#f5f3ff;--purple-b:#ddd6fe;
+  --font:'Noto Sans TC',sans-serif;--radius:14px;--radius-sm:10px;
   --shadow:0 2px 12px rgba(0,0,0,0.08);
-  --shadow-lg:0 8px 32px rgba(0,0,0,0.12);
 }
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem}
-.login-wrap{width:100%;max-width:480px}
+.wrap{width:100%;max-width:500px}
 .logo{text-align:center;margin-bottom:2.5rem}
 .logo-icon{display:inline-flex;align-items:center;justify-content:center;width:72px;height:72px;background:var(--accent-dim);border-radius:20px;margin-bottom:1rem;font-size:36px}
 .logo h1{font-size:1.8rem;font-weight:900;color:var(--text);letter-spacing:-0.02em}
 .logo p{font-size:1rem;color:var(--text2);margin-top:6px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow)}
 .card-label{font-size:0.85rem;font-weight:700;color:var(--text3);margin-bottom:1rem;letter-spacing:0.06em;text-transform:uppercase}
-.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem}
-.role-btn{background:var(--surface2);border:2px solid var(--border);border-radius:var(--radius-sm);padding:1.2rem 0.75rem;cursor:pointer;text-align:center;transition:all 0.15s;color:var(--text2);font-family:var(--font)}
+.role-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:1.5rem}
+.role-btn{background:var(--surface2);border:2px solid var(--border);border-radius:var(--radius-sm);padding:1.1rem 0.75rem;cursor:pointer;text-align:center;transition:all 0.15s;color:var(--text2);font-family:var(--font)}
 .role-btn:hover{border-color:var(--accent);background:var(--accent-dim);color:var(--accent)}
 .role-btn.active{border-color:var(--accent);background:var(--accent-dim);color:var(--accent)}
-.role-btn .ri{font-size:2rem;margin-bottom:8px;display:block}
-.role-btn strong{display:block;font-weight:700;font-size:1rem;margin-bottom:3px}
-.role-btn span{font-size:0.82rem}
+.role-btn .ri{font-size:1.8rem;margin-bottom:7px;display:block}
+.role-btn strong{display:block;font-weight:700;font-size:0.95rem;margin-bottom:2px}
+.role-btn span{font-size:0.8rem}
+.role-btn.superadmin-btn{border-color:var(--purple-b);background:var(--purple-dim);color:var(--purple);grid-column:1/-1}
+.role-btn.superadmin-btn:hover,.role-btn.superadmin-btn.active{border-color:var(--purple);background:var(--purple-dim)}
 .form-group{margin-bottom:1rem}
 .form-group label{display:block;font-size:0.9rem;font-weight:600;color:var(--text2);margin-bottom:8px}
-.form-group select,.form-group input{
-  width:100%;background:var(--surface2);border:2px solid var(--border);border-radius:var(--radius-sm);
-  color:var(--text);font-family:var(--font);font-size:1rem;padding:0.75rem 1rem;outline:none;transition:border-color 0.15s;-webkit-appearance:none}
+.form-group select,.form-group input{width:100%;background:var(--surface2);border:2px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font);font-size:1rem;padding:0.75rem 1rem;outline:none;transition:border-color 0.15s;-webkit-appearance:none}
 .form-group select:focus,.form-group input:focus{border-color:var(--accent)}
-.form-group select option{background:#fff}
-.btn-primary{
-  width:100%;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);
-  padding:0.9rem;font-family:var(--font);font-size:1.05rem;font-weight:700;cursor:pointer;transition:opacity 0.15s;margin-top:0.5rem}
+.btn-primary{width:100%;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:0.9rem;font-family:var(--font);font-size:1.05rem;font-weight:700;cursor:pointer;transition:opacity 0.15s;margin-top:0.5rem}
 .btn-primary:hover{opacity:0.88}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed}
 .info-box{background:var(--accent-dim);border:1px solid rgba(29,110,245,0.2);border-radius:var(--radius-sm);padding:1rem;font-size:0.9rem;color:var(--text2);line-height:1.7}
-#error-msg{background:var(--red-dim);border:1px solid rgba(220,38,38,0.25);border-radius:var(--radius-sm);padding:0.75rem 1rem;font-size:0.9rem;color:var(--red);margin-bottom:1rem}
+.err{background:var(--red-dim);border:1px solid rgba(220,38,38,0.25);border-radius:var(--radius-sm);padding:0.75rem 1rem;font-size:0.9rem;color:var(--red);margin-bottom:1rem}
+.loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem;z-index:9999}
+.loading-spinner{width:36px;height:36px;border:4px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 .hidden{display:none!important}
 </style>
 </head>
 <body>
-<div class="login-wrap">
+<div class="loading-screen" id="loading-screen">
+  <div class="loading-spinner"></div>
+  <p style="font-size:0.95rem;color:var(--text2)">連線中…</p>
+</div>
+<div class="wrap">
   <div class="logo">
     <div class="logo-icon">🎮</div>
     <h1>遊戲片追貨平台</h1>
@@ -74,26 +78,30 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
       <button class="role-btn" onclick="selectRole('pm',this)">
         <span class="ri">⚙️</span><strong>PM 管理</strong><span>商品與 MOQ 設定</span>
       </button>
+      <button class="role-btn" onclick="selectRole('superadmin',this)" style="border-color:var(--red);background:var(--red-dim)">
+        <span class="ri">🔑</span><strong style="color:var(--red)">Super Admin</strong><span>系統全權管理</span>
+      </button>
+      <button class="role-btn superadmin-btn" onclick="selectRole('superadmin',this)">
+        <span class="ri">🛡️</span><strong>Super Admin</strong><span>系統總管理</span>
+      </button>
     </div>
-    <div id="error-msg" class="hidden"></div>
+    <div id="err" class="err hidden"></div>
     <div id="form-dealer" class="hidden">
-      <div class="info-box">經銷商請使用業務提供的<strong>專屬連結</strong>直接進入填單頁面，無需帳號或密碼。<br>連結格式：<code style="font-size:0.85rem;color:var(--accent)">dealer.html?code=WQ2025</code></div>
+      <div class="info-box">經銷商請使用業務提供的<strong>專屬連結</strong>直接進入。<br>
+      格式：<code style="color:var(--accent);font-size:0.85rem">dealer.html?code=WQ2025</code></div>
     </div>
     <div id="form-sales" class="hidden">
-      <div class="form-group">
-        <label>業務帳號</label>
+      <div class="form-group"><label>業務帳號</label>
         <select id="sales-select">
           <option value="">── 請選擇 ──</option>
-          <option value="Edward">Edward</option><option value="Wythe">Wythe</option>
-          <option value="Eric">Eric</option><option value="Hsinhui">Hsinhui</option>
-          <option value="AKI">AKI</option><option value="Tom">Tom</option>
-          <option value="Mickey">Mickey</option><option value="Meg">Meg</option>
+          <option>Edward</option><option>Wythe</option><option>Eric</option>
+          <option>Hsinhui</option><option>AKI</option><option>Tom</option>
+          <option>Mickey</option><option>Meg</option>
         </select>
       </div>
     </div>
     <div id="form-staff" class="hidden">
-      <div class="form-group">
-        <label>存取碼</label>
+      <div class="form-group"><label>存取碼</label>
         <input type="password" id="staff-pwd" placeholder="輸入存取碼">
       </div>
     </div>
@@ -101,36 +109,59 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   </div>
 </div>
 <script>
-let currentRole=null;
-function selectRole(role,el){
+const FIREBASE_CONFIG={apiKey:"AIzaSyA-eDT7V7asiQ5ebGca-wBif8P-uW89_iQ",authDomain:"agm-tracking.firebaseapp.com",databaseURL:"https://agm-tracking-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"agm-tracking",storageBucket:"agm-tracking.firebasestorage.app",messagingSenderId:"91450833150",appId:"1:91450833150:web:79e5b01783be48ebff4daf"};
+
+let currentRole=null, fbDB=null, passwords={};
+
+// 預設密碼（Firebase 未設定時的 fallback）
+const DEFAULT_PASSWORDS={logistics:'agm2025', pm:'pm2025', superadmin:'super2025'};
+
+window.addEventListener('DOMContentLoaded', async()=>{
+  try{
+    if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    fbDB=firebase.database();
+    const snap = await fbDB.ref('config/passwords').once('value');
+    passwords = snap.val() || {};
+  }catch(e){ console.warn('Firebase 連線失敗，使用預設密碼'); }
+  document.getElementById('loading-screen').classList.add('hidden');
+});
+
+function getPassword(role){
+  return passwords[role] || DEFAULT_PASSWORDS[role] || '';
+}
+
+function selectRole(role, el){
   currentRole=role;
   document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
   ['dealer','sales','staff'].forEach(f=>document.getElementById('form-'+f).classList.add('hidden'));
-  document.getElementById('error-msg').classList.add('hidden');
+  document.getElementById('err').classList.add('hidden');
   if(role==='dealer') document.getElementById('form-dealer').classList.remove('hidden');
   else if(role==='sales') document.getElementById('form-sales').classList.remove('hidden');
   else document.getElementById('form-staff').classList.remove('hidden');
   document.getElementById('login-btn').classList.remove('hidden');
 }
-function showError(msg){const e=document.getElementById('error-msg');e.textContent=msg;e.classList.remove('hidden')}
+
+function showErr(msg){ const e=document.getElementById('err'); e.textContent=msg; e.classList.remove('hidden'); }
+
 function doLogin(){
-  document.getElementById('error-msg').classList.add('hidden');
-  if(!currentRole) return showError('請先選擇角色');
-  if(currentRole==='dealer'){showError('經銷商請使用業務提供的專屬連結進入');return;}
+  document.getElementById('err').classList.add('hidden');
+  if(!currentRole) return showErr('請先選擇角色');
+  if(currentRole==='dealer'){ showErr('經銷商請使用業務提供的專屬連結進入'); return; }
   if(currentRole==='sales'){
     const v=document.getElementById('sales-select').value;
-    if(!v) return showError('請選擇業務帳號');
-    sessionStorage.setItem('role','sales');sessionStorage.setItem('sales',v);location.href='sales.html';
-  } else if(currentRole==='logistics'){
-    if(document.getElementById('staff-pwd').value!=='agm2025') return showError('存取碼錯誤');
-    sessionStorage.setItem('role','logistics');location.href='logistics.html';
-  } else if(currentRole==='pm'){
-    if(document.getElementById('staff-pwd').value!=='pm2025') return showError('存取碼錯誤');
-    sessionStorage.setItem('role','pm');location.href='pm.html';
+    if(!v) return showErr('請選擇業務帳號');
+    sessionStorage.setItem('role','sales'); sessionStorage.setItem('sales',v);
+    location.href='sales.html'; return;
   }
+  const pwd=document.getElementById('staff-pwd').value;
+  if(pwd!==getPassword(currentRole)) return showErr('存取碼錯誤');
+  sessionStorage.setItem('role', currentRole);
+  if(currentRole==='logistics') location.href='logistics.html';
+  else if(currentRole==='pm') location.href='pm.html';
+  else if(currentRole==='superadmin') location.href='superadmin.html';
 }
-document.getElementById('staff-pwd').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+document.addEventListener('keydown', e=>{ if(e.key==='Enter' && currentRole) doLogin(); });
 </script>
 </body>
 </html>

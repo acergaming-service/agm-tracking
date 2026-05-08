@@ -124,14 +124,14 @@ tr:hover td{background:var(--surface2)}
 <div class="container">
   <div class="page-header"><h1>商品 ＆ MOQ 管理</h1><p>維護品項狀態、到貨日、向原廠下單量，並管理通路連結</p></div>
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('moq',this)">📋 MOQ 回填</button>
-    <button class="tab" onclick="switchTab('products',this)">📦 商品管理</button>
+    <button class="tab active" onclick="switchTab('products',this)">📦 商品管理</button>
+    <button class="tab" onclick="switchTab('moq',this)">📋 MOQ 回填</button>
     <button class="tab" onclick="switchTab('links',this)">🔗 通路連結</button>
     <button class="tab" onclick="switchTab('window',this)">📅 週期設定</button>
   </div>
 
   <!-- ══ MOQ 回填 ══ -->
-  <div id="tab-moq">
+  <div id="tab-moq" class="hidden">
     <div class="filter-bar">
       <select class="filter-select" id="moq-vendor" onchange="renderMOQ()">
         <option value="">全部代理商</option>
@@ -183,7 +183,7 @@ tr:hover td{background:var(--surface2)}
   </div>
 
   <!-- ══ 商品管理 ══ -->
-  <div id="tab-products" class="hidden">
+  <div id="tab-products">
     <div class="add-form">
       <h3>新增品項</h3>
       <div class="form-grid">
@@ -249,50 +249,20 @@ tr:hover td{background:var(--surface2)}
       <div class="tbl-header"><span class="tbl-title">所有品項清單</span></div>
       <table><thead><tr>
         <th style="width:50px">代理</th><th style="width:58px">平台</th><th style="width:70px">類型</th>
-        <th>品名 / 規格 / 條碼</th>
-        <th style="width:75px;text-align:right">SRP</th>
-        <th style="width:75px;text-align:right">出貨價</th>
-        <th style="width:68px;text-align:right">MOQ</th>
+        <th>品名</th>
+        <th style="width:110px">AGM P/N</th>
+        <th style="width:115px">國際條碼</th>
+        <th style="width:70px;text-align:right">SRP</th>
+        <th style="width:70px;text-align:right">出貨價</th>
+        <th style="width:60px;text-align:right">MOQ</th>
         <th style="width:115px">狀態</th>
-        <th style="width:130px">到貨日</th>
+        <th style="width:120px">到貨日</th>
         <th style="width:40px"></th>
       </tr></thead><tbody id="prod-tbody"></tbody></table>
     </div>
   </div>
 
-  <!-- ══ 通路連結 ══ -->
-  <div id="tab-links" class="hidden">
-    <div class="add-form">
-      <h3>各通路專屬連結</h3>
-      <p style="font-size:0.92rem;color:var(--text2);margin-bottom:1.2rem;line-height:1.7">
-        連結格式：<code style="font-family:var(--mono);color:var(--accent);background:var(--accent-dim);padding:2px 8px;border-radius:4px">dealer.html?code=[通路代碼]2025</code>
-      </p>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn-add" onclick="copyAllLinks()">📋 複製全部連結</button>
-        <button class="btn-add-green" onclick="exportLinksCSV()">📥 匯出 CSV</button>
-      </div>
-    </div>
-    <div class="tbl-wrap">
-      <div class="tbl-header"><span class="tbl-title">通路連結清單</span></div>
-      <table><thead><tr>
-        <th>通路名稱</th><th>負責業務</th><th>通路代碼</th><th>專屬連結</th><th style="width:80px"></th>
-      </tr></thead><tbody id="links-tbody"></tbody></table>
-    </div>
   </div>
-
-  <!-- ══ 週期設定 ══ -->
-  <div id="tab-window" class="hidden">
-    <div class="add-form">
-      <h3>收單週期設定</h3>
-      <div class="form-grid" style="max-width:500px">
-        <div class="fg"><label>當週週次（例：2025-W20）</label><input id="wk-week" placeholder="2025-W20"></div>
-        <div class="fg"><label>收單視窗狀態</label>
-          <select id="wk-open"><option value="true">✅ 開放收單中</option><option value="false">⏸ 已關閉結算中</option></select></div>
-      </div>
-      <button class="btn-add" onclick="saveWindowSettings()">儲存設定</button>
-    </div>
-  </div>
-</div>
 <div class="toast hidden" id="toast"></div>
 
 <script>
@@ -312,10 +282,10 @@ const STATUS_OPTS=[
 ];
 const STATUS_MAP=Object.fromEntries(STATUS_OPTS.map(o=>[o.v,o]));
 
-let fbDB, products={}, dealers={}, orders={}, pmData={}, winData={}, activeTab='moq';
+let fbDB, products={}, dealers={}, orders={}, pmData={}, winData={}, activeTab='products';
 
 window.addEventListener('DOMContentLoaded', async()=>{
-  if(sessionStorage.getItem('role')!=='pm'){location.href='index.html';return;}
+  const _r=sessionStorage.getItem('role'); if(_r!=='pm'&&_r!=='superadmin'){location.href='index.html';return;}
   try{
     if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
     fbDB=firebase.database();
@@ -332,7 +302,7 @@ window.addEventListener('DOMContentLoaded', async()=>{
     fbDB.ref('pmData').on('value', snap=>{ pmData=snap.val()||{}; if(activeTab==='moq') renderMOQ(); });
 
     populateCategoryFilters();
-    renderMOQ();
+    renderProducts();
     document.getElementById('loading-screen').classList.add('hidden');
   }catch(err){
     document.getElementById('loading-screen').innerHTML=
@@ -352,11 +322,12 @@ function populateCategoryFilters(){
 function switchTab(tab,el){
   activeTab=tab;
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active');
-  ['moq','products','links','window'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden',t!==tab));
+  ['moq','products'].forEach(t=>{
+    const el2=document.getElementById('tab-'+t);
+    if(el2) el2.classList.toggle('hidden',t!==tab);
+  });
   if(tab==='moq')      renderMOQ();
   if(tab==='products') renderProducts();
-  if(tab==='links')    renderLinks();
-  if(tab==='window')   renderWindow();
 }
 
 // ── 取得篩選後的品項列表 ────────────────────────────────────────────────────
@@ -472,12 +443,13 @@ function renderProducts(){
       <td><span class="platform-tag ${p.platform}">${p.platform}</span></td>
       <td style="font-size:0.78rem;color:var(--text3)">${p.category||''}</td>
       <td>
-        <div style="font-weight:600;font-size:0.88rem">${p.name}</div>
-        <div style="font-size:0.72rem;color:var(--text3);margin-top:2px;font-family:var(--mono)">
-          ${p.pn&&p.pn!=='—'?p.pn:''} ${p.spec?'· '+p.spec:''}
+        <div style="font-weight:700;font-size:0.9rem;line-height:1.3">${p.name}</div>
+        <div style="margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          ${p.pn&&p.pn!=='—'?`<span style="font-family:var(--mono);font-size:0.72rem;background:var(--accent-dim);color:var(--accent);padding:1px 6px;border-radius:4px;font-weight:600">AGM:${p.pn}</span>`:''}
+          ${p.spec?`<span style="font-family:var(--mono);font-size:0.72rem;color:var(--text3)">${p.spec}</span>`:''}
+          ${p.barcode?`<span style="font-family:var(--mono);font-size:0.72rem;color:var(--text3)">國條:${p.barcode}</span>`:''}
+          ${p.isAllocation?`<span style="font-size:0.72rem;background:var(--amber-dim);color:var(--amber);padding:1px 6px;border-radius:4px;font-weight:700">⚠分配出貨</span>`:''}
         </div>
-        ${p.barcode?`<div style="font-family:var(--mono);font-size:0.72rem;color:var(--text3)">國條:${p.barcode}</div>`:''}
-        ${p.isAllocation?`<span class="alloc-dot"></span><span style="font-size:0.72rem;color:var(--amber);font-weight:700">分配出貨</span>`:''}
       </td>
       <td style="text-align:right;font-family:var(--mono);font-size:0.85rem">${(p.srp||0).toLocaleString()}</td>
       <td style="text-align:right;font-family:var(--mono);font-size:0.85rem">${(p.price||0).toLocaleString()}</td>
@@ -608,7 +580,7 @@ async function seedDB(){
     Object.keys(DEFAULT_PMDATA).length>0?fbDB.ref('pmData').update(DEFAULT_PMDATA):Promise.resolve(),
   ]);
   products=DEFAULT_PRODUCTS; dealers=DEFAULT_DEALERS;
-  populateCategoryFilters(); renderMOQ(); showToast('✅ 資料庫初始化完成！');
+  populateCategoryFilters(); renderProducts(); showToast('✅ 資料庫初始化完成！');
 }
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),2500);}
 </script>
