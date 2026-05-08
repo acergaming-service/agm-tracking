@@ -62,9 +62,9 @@ nav{background:#fff;border-bottom:2px solid var(--border);padding:0 1.5rem;heigh
 
 /* ── PRODUCT TABLE ── */
 .prod-wrap{background:#fff;border:2px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow:hidden}
-.prod-thead{display:grid;grid-template-columns:80px 1fr 110px 100px 90px 100px;gap:12px;padding:10px 18px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.prod-thead{display:grid;grid-template-columns:72px 1fr 100px 100px 100px 80px 90px;gap:12px;padding:10px 18px;background:var(--surface2);border-bottom:1px solid var(--border)}
 .prod-thead span{font-size:0.78rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em}
-.prod-row{display:grid;grid-template-columns:80px 1fr 110px 100px 90px 100px;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);transition:background 0.1s}
+.prod-row{display:grid;grid-template-columns:72px 1fr 100px 100px 100px 80px 90px;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);transition:background 0.1s}
 .prod-row:last-child{border-bottom:none}
 .prod-row:hover{background:var(--surface2)}
 
@@ -523,16 +523,26 @@ function renderProducts(){
           </div>`:''}`;
         })()}
       </div>
-      <div style="text-align:right;font-family:var(--mono)">
-        <div style="font-size:0.95rem;font-weight:700">${p.srp?(p.srp).toLocaleString():'—'}</div>
-        ${p.priceSpecial&&p.priceSpecial>0?`<div style="font-size:0.72rem;color:var(--red);font-weight:700;text-decoration:line-through;opacity:0.6">${p.srp.toLocaleString()}</div>`:''}
+      <div style="text-align:right;font-family:var(--mono);font-size:0.92rem;font-weight:600">
+        NT$${p.srp?(p.srp).toLocaleString():'—'}
       </div>
-      <div style="text-align:right;font-family:var(--mono)">
-        <div style="font-size:0.95rem;font-weight:700;color:var(--text)">${p.priceTax?(p.priceTax).toLocaleString():'—'}</div>
-        ${p.priceSpecial&&p.priceSpecial>0?`<div style="font-size:0.8rem;color:var(--red);font-weight:700">→ ${p.priceSpecial.toLocaleString()}</div>`:''}
+      <div style="text-align:right;font-family:var(--mono);font-size:0.92rem;font-weight:700">
+        ${(()=>{
+          const _pm2=pmData[p.id]||{};
+          const sp=_pm2.priceSpecial||p.priceSpecial||0;
+          if(sp>0) return `<span style="text-decoration:line-through;color:var(--text3);font-size:0.8rem">NT$${(p.priceTax||0).toLocaleString()}</span><br>NT$${sp.toLocaleString()}`;
+          return `NT$${p.priceTax?(p.priceTax).toLocaleString():'—'}`;
+        })()}
       </div>
-      <div style="text-align:right;font-family:var(--mono)">
-        <div style="font-size:0.95rem;font-weight:700;color:var(--text2)">${p.price?(p.price).toLocaleString():'—'}</div>
+      <div style="text-align:right;font-family:var(--mono);font-size:0.92rem;color:var(--text2)">
+        NT$${p.price?(p.price).toLocaleString():'—'}
+      </div>
+      <div style="text-align:right;font-size:0.85rem;color:var(--text2)">
+        ${(()=>{
+          if(!p.srp||!p.priceTax) return '—';
+          const pct=Math.round(p.priceTax/p.srp*100);
+          return pct+'%';
+        })()}
       </div>
       <div class="qty-ctrl">
         ${disabled
@@ -550,9 +560,10 @@ function renderProducts(){
       <div class="prod-thead">
         <span>平台</span>
         <span>品名</span>
-        <span style="text-align:right">SRP<br><span style="font-weight:400;font-size:0.7rem">含稅建議售價</span></span>
-        <span style="text-align:right">出貨價<br><span style="font-weight:400;font-size:0.7rem">含稅</span></span>
-        <span style="text-align:right">出貨價<br><span style="font-weight:400;font-size:0.7rem">未稅</span></span>
+        <span style="text-align:right">SRP<br><small style="font-weight:400;opacity:0.7">含稅</small></span>
+        <span style="text-align:right">出貨價<br><small style="font-weight:400;opacity:0.7">含稅</small></span>
+        <span style="text-align:right">出貨價<br><small style="font-weight:400;opacity:0.7">未稅</small></span>
+        <span style="text-align:right">折扣</span>
         <span style="text-align:right">訂購數量</span>
       </div>
       ${rows||`<div style="padding:2rem;text-align:center;color:var(--text3)">此分類目前無品項</div>`}
