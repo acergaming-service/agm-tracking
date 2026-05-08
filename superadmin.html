@@ -270,8 +270,9 @@ tr:hover td{background:var(--surface2)}
         <th style="width:45px">代理</th><th style="width:55px">平台</th><th style="width:65px">類型</th>
         <th>品名</th><th style="width:100px">AGBS P/N</th><th style="width:105px">國際條碼</th><th style="width:62px">規格</th>
         <th style="width:68px;text-align:right">SRP</th><th style="width:68px;text-align:right">出貨價</th>
-        <th style="width:55px;text-align:right">MOQ</th><th style="width:110px">狀態</th>
-        <th style="width:115px">到貨日</th><th style="width:38px"></th>
+        <th style="width:52px;text-align:right">MOQ</th><th style="width:52px;text-align:right">上限</th>
+        <th style="width:108px">狀態</th>
+        <th style="width:112px">到貨日</th><th style="width:48px;text-align:center">編輯</th><th style="width:38px"></th>
       </tr></thead><tbody id="prod-tbody"></tbody></table>
     </div>
   </div>
@@ -502,6 +503,38 @@ tr:hover td{background:var(--surface2)}
     </div>
   </div>
 </div>
+<!-- 編輯品項 Modal -->
+<div class="modal-overlay hidden" id="edit-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#fff;border-radius:var(--radius);padding:2rem;width:100%;max-width:700px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <h2 style="font-size:1.2rem;font-weight:900;margin-bottom:1.5rem;color:var(--red)">✏️ 編輯品項</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem">
+      <div class="fg" style="grid-column:1/-1"><label>中文品名</label><input id="ep-name"></div>
+      <div class="fg"><label>代理商</label>
+        <select id="ep-vendor" disabled style="background:var(--surface2);cursor:not-allowed">
+          <option value="BNE">BNE</option><option value="GS">GSE</option><option value="SONY">SONY</option>
+        </select></div>
+      <div class="fg"><label>平台</label>
+        <select id="ep-platform"><option>NS</option><option>NS2</option><option>PS5</option><option>PS4</option><option>VR</option></select></div>
+      <div class="fg"><label>類型</label>
+        <select id="ep-category"><option>軟體</option><option>主機</option><option>周邊</option><option>女性向</option><option>誠翼</option><option>OLP</option><option>PS4 HITS</option><option>SEGA</option><option>VR</option><option>軟體(三廠)</option></select></div>
+      <div class="fg"><label>AGBS P/N</label><input id="ep-pn" placeholder="ZL.A00TZ.XXX"></div>
+      <div class="fg"><label>國際條碼 (EAN)</label><input id="ep-barcode" placeholder="4713014XXXXXX"></div>
+      <div class="fg"><label>規格 / 型號</label><input id="ep-spec"></div>
+      <div class="fg"><label>SRP（含稅）</label><input id="ep-srp" type="number"></div>
+      <div class="fg"><label>出貨價（未稅）</label><input id="ep-price" type="number"></div>
+      <div class="fg"><label>優惠出貨價（SONY用）</label><input id="ep-price-special" type="number"></div>
+      <div class="fg"><label>MOQ（最低訂購量）</label><input id="ep-moq" type="number"></div>
+      <div class="fg"><label>上限（maxOrder，空白=無上限）</label><input id="ep-max" type="number" placeholder="—"></div>
+      <div class="fg"><label>分配出貨</label>
+        <select id="ep-alloc"><option value="false">否</option><option value="true">是（分配出貨）</option></select></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closeEditModal()" style="background:#fff;border:2px solid var(--border);color:var(--text2);border-radius:var(--radius-sm);padding:9px 22px;font-family:var(--font);font-size:0.92rem;font-weight:600;cursor:pointer">取消</button>
+      <button onclick="saveEditModal()" style="background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:9px 22px;font-family:var(--font);font-size:0.92rem;font-weight:700;cursor:pointer">儲存變更</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast hidden" id="toast"></div>
 
 <script>
@@ -695,6 +728,10 @@ function renderProducts(){
         <input class="inline-num" type="number" min="0" value="${p.moq||0}"
           onchange="updateProd('${p.vendor}','${p.id}','moq',parseInt(this.value)||0)">
       </td>
+      <td style="text-align:right">
+        <input class="inline-num" type="number" min="0" value="${p.maxOrder||''}" placeholder="—"
+          onchange="updateProd('${p.vendor}','${p.id}','maxOrder',this.value?parseInt(this.value):null)">
+      </td>
       <td>
         <select class="inline-select ${sCls}" onchange="updateProdAndPM('${p.vendor}','${p.id}','status',this.value)">
           ${STATUS_OPTS.map(o=>`<option value="${o.v}" ${status===o.v?'selected':''}>${o.l}</option>`).join('')}
@@ -703,6 +740,10 @@ function renderProducts(){
       <td>
         <input class="inline-text ${arrival?'filled':''}" type="text" value="${arrival}" placeholder="到貨日"
           onchange="updateProdAndPM('${p.vendor}','${p.id}','arrival',this.value)">
+      </td>
+      <td style="text-align:center">
+        <button style="background:var(--accent-dim);border:1px solid #bfcffe;color:var(--accent);border-radius:6px;padding:3px 9px;font-family:var(--font);font-size:0.8rem;font-weight:700;cursor:pointer"
+          onclick="openEditModal('${p.vendor}','${p.id}')">✏️</button>
       </td>
       <td><button class="btn-del" onclick="deleteProd('${p.vendor}','${p.id}')">刪除</button></td>
     </tr>`;
@@ -1137,6 +1178,51 @@ async function seedDB(){
   // 直接把目前 products 物件重新寫入（或可在此放預設資料）
   await fbDB.ref('products').set(products);
   showToast('✅ 資料庫已重新初始化','green');
+}
+
+// ── 編輯品項 Modal ───────────────────────────────────────────────────────────
+let _editVendor='', _editPid='';
+function openEditModal(vendor, pid){
+  _editVendor=vendor; _editPid=pid;
+  const p=(products[vendor]||{})[pid]; if(!p) return;
+  getEl('ep-name').value=p.name||'';
+  getEl('ep-vendor').value=vendor;
+  getEl('ep-platform').value=p.platform||'NS';
+  getEl('ep-category').value=p.category||'軟體';
+  getEl('ep-pn').value=p.pn&&p.pn!=='—'?p.pn:'';
+  getEl('ep-barcode').value=p.barcode||'';
+  getEl('ep-spec').value=p.spec||'';
+  getEl('ep-srp').value=p.srp||0;
+  getEl('ep-price').value=p.price||0;
+  getEl('ep-price-special').value=p.priceSpecial||0;
+  getEl('ep-moq').value=p.moq||0;
+  getEl('ep-max').value=p.maxOrder||'';
+  getEl('ep-alloc').value=String(p.isAllocation||false);
+  getEl('edit-modal').classList.remove('hidden');
+}
+function closeEditModal(){getEl('edit-modal').classList.add('hidden');}
+async function saveEditModal(){
+  const vendor=_editVendor, pid=_editPid;
+  if(!vendor||!pid) return;
+  const updates={
+    name:getEl('ep-name').value.trim(),
+    platform:getEl('ep-platform').value,
+    category:getEl('ep-category').value,
+    pn:getEl('ep-pn').value.trim()||'—',
+    barcode:getEl('ep-barcode').value.trim(),
+    spec:getEl('ep-spec').value.trim(),
+    srp:parseInt(getEl('ep-srp').value)||0,
+    price:parseInt(getEl('ep-price').value)||0,
+    priceSpecial:parseInt(getEl('ep-price-special').value)||0,
+    moq:parseInt(getEl('ep-moq').value)||0,
+    maxOrder:getEl('ep-max').value?parseInt(getEl('ep-max').value):null,
+    isAllocation:getEl('ep-alloc').value==='true',
+  };
+  if(!updates.name){alert('品名不能為空');return;}
+  await fbDB.ref(`products/${vendor}/${pid}`).update(updates);
+  if(!products[vendor]) products[vendor]={};
+  Object.assign(products[vendor][pid], updates);
+  closeEditModal(); renderProducts(); showToast('品項已更新','green');
 }
 
 function showToast(msg,type='green'){
