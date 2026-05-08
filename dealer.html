@@ -479,51 +479,26 @@ function renderProducts(){
         <span class="platform-tag ${p.platform}">${p.platform}</span>
 
       </div>
-      <div>
-        <div class="prod-name">${p.name}</div>
+      <div style="padding:10px 12px">
         ${(()=>{
           const _pm=pmData[p.id]||{};
           const _st=(_pm.status!==undefined&&_pm.status!==null?_pm.status:p.status)||'';
           const cfg=STATUS_CFG[_st]||STATUS_CFG[''];
           const arrival=_pm.arrival||p.arrival||'';
-          const moqVal=_pm.moq||p.moq||0;
+          const tag=_pm.priceTag||p.priceTag||'';
+          const gTotal=(window._globalTotals||{})[p.id]||0;
+          const overLimit=p.maxOrder&&p.maxOrder>0&&gTotal>p.maxOrder;
+          const nearLimit=p.maxOrder&&p.maxOrder>0&&!overLimit&&Math.round(gTotal/p.maxOrder*100)>=80;
           return `
-          <div class="prod-meta" style="margin-top:5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            ${!arrival&&cfg.label&&cfg.label!=='—'?`<span style="font-size:0.82rem;color:${cfg.color}">${cfg.label}</span>`:''}
-            ${p.spec?`<span style="font-size:0.75rem;color:var(--text3);background:var(--surface2);padding:1px 6px;border-radius:4px">${p.spec}</span>`:''}
-          </div>
-          <div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-            ${arrival?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.85rem;font-weight:700;background:#d97706;color:#fff;padding:4px 12px;border-radius:6px">
-              📅 到貨日：${arrival}
-            </span>`:''}
-            ${(()=>{
-              const tag=_pm.priceTag||p.priceTag||'';
-              if(!tag) return '';
-              return `<span style="font-size:0.82rem;font-weight:700;color:var(--red)">【${tag}】</span>`;
-            })()}
-            ${p.isAllocation?`<span style="font-size:0.82rem;color:var(--amber)">⚠ 分配出貨，數量由 AGM 決定</span>`:''}
-            ${(p.giftItem||'')?`<div style="font-size:0.82rem;color:var(--text2);margin-top:3px">📦 附贈：${p.giftItem}</div>`:''}
-            ${(()=>{
-              if(!p.maxOrder||typeof p.maxOrder!=='number'||p.maxOrder<=0) return '';
-              const gTotal=(window._globalTotals||{})[p.id]||0;
-              const over=gTotal>p.maxOrder;
-              const pct=p.maxOrder>0?Math.min(100,Math.round(gTotal/p.maxOrder*100)):0;
-              const color=over?'var(--red)':pct>=80?'var(--amber)':'var(--text2)';
-              const bg=over?'var(--red-dim)':pct>=80?'var(--amber-dim)':'var(--surface2)';
-              const borderC=over?'var(--red-b)':pct>=80?'var(--amber-b)':'var(--border)';
-              const icon=over?'🔴':pct>=80?'⚠️':'📊';
-              const msg=over?'（已超量）':pct>=80?'（接近上限）':'';
-              return `<div style="margin-top:5px">
-                <span style="font-size:0.82rem;font-weight:700;color:${color};background:${bg};padding:3px 10px;border-radius:6px;border:1px solid ${borderC};display:inline-block">
-                  ${icon} 全通路已登記 ${gTotal} 件 / 上限 ${p.maxOrder} 件 ${msg}
-                </span>
-              </div>`;
-            })()}
-          </div>
-          ${(()=>{const note=_pm.displayNote||p.displayNote||'';return note?`<div style="margin-top:3px;font-size:0.82rem;color:var(--text2)">${note}</div>`:'';})()}
-          ${p.barcode?`<div style="margin-top:5px">
-            <span style="font-family:var(--mono);font-size:0.82rem;color:var(--text2);letter-spacing:0.04em"><span style="color:var(--text3)">國條:</span>${p.barcode}</span>
-          </div>`:''}`;
+          ${tag?`<div style="font-size:0.78rem;font-weight:700;color:var(--red);margin-bottom:2px">${tag}</div>`:''}
+          <div style="font-size:1rem;font-weight:700;line-height:1.3;margin-bottom:3px">${p.name}</div>
+          ${(p.pn&&p.pn!=='—')||p.spec?`<div style="font-size:0.78rem;color:var(--text3);margin-bottom:3px">${p.pn&&p.pn!=='—'?p.pn:''}${p.spec?' · '+p.spec:''}</div>`:''}
+          ${arrival?`<div style="font-size:0.82rem;font-weight:700;color:var(--amber);margin-bottom:2px">📅 到貨：${arrival}</div>`:''}
+          ${!arrival&&cfg.label&&cfg.label!=='—'?`<div style="font-size:0.8rem;color:${cfg.color};margin-bottom:2px">${cfg.label}</div>`:''}
+          ${overLimit?`<div style="font-size:0.78rem;font-weight:700;color:var(--red)">🔴 已超量 (${gTotal}/${p.maxOrder})</div>`:''}
+          ${nearLimit?`<div style="font-size:0.78rem;color:var(--amber)">⚠️ 接近上限 (${gTotal}/${p.maxOrder})</div>`:''}
+          ${p.barcode?`<div style="font-family:var(--mono);font-size:0.75rem;color:var(--text3);margin-top:3px">國條:${p.barcode}</div>`:''}
+          `;
         })()}
       </div>
       <div style="text-align:right;font-family:var(--mono);font-size:0.92rem;font-weight:600;display:flex;align-items:center;justify-content:flex-end">
