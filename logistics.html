@@ -441,6 +441,7 @@ window.addEventListener('DOMContentLoaded', async()=>{
     populateSalesFilter();
     fbDB.ref('window').on('value',snap=>{winData=snap.val()||{};renderWindowCtrl();});
     fbDB.ref('pmData').on('value',snap=>{pmDataCache=snap.val()||{};});
+    fbDB.ref('products').on('value',snap=>{products=snap.val()||{};});
     fbDB.ref('orders').on('value',snap=>{
       orders=snap.val()||{};
       buildRows();
@@ -908,6 +909,15 @@ function renderCatalog(){
   const platform=document.getElementById('cat-platform')?.value||'';
   const status=document.getElementById('cat-status')?.value||'';
   const search=(document.getElementById('cat-search')?.value||'').toLowerCase();
+
+  // 若 products 還沒載入，延遲重試
+  const totalProds=Object.values(products).reduce((s,ps)=>s+Object.keys(ps||{}).length,0);
+  if(totalProds===0){
+    document.getElementById('cat-count').textContent='載入中…';
+    document.getElementById('cat-tbody').innerHTML='<tr><td colspan="12" style="padding:2rem;text-align:center;color:var(--text3)">載入中，請稍候…</td></tr>';
+    setTimeout(renderCatalog, 800);
+    return;
+  }
 
   let rows=[];
   Object.entries(products).forEach(([v,prods])=>{
