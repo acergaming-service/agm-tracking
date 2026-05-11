@@ -182,8 +182,8 @@ tr:hover td{background:var(--surface2)}
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-label">有訂單品項</div><div class="stat-val c-blue" id="st-items">—</div><div class="stat-sub">個品項</div></div>
       <div class="stat-card"><div class="stat-label">合計訂購量</div><div class="stat-val c-green" id="st-qty">—</div><div class="stat-sub">件</div></div>
-      <div class="stat-card clickable" onclick="setMoqFilter('below')" title="點擊篩選 MOQ 不足">
-        <div class="stat-label">⚠ MOQ 不足</div><div class="stat-val c-red" id="st-moq">—</div><div class="stat-sub">個品項需確認（點擊篩選）</div>
+      <div class="stat-card clickable" onclick="filterArrivalThisWeek()" title="點擊篩選本週到貨品項">
+        <div class="stat-label">📦 本週到貨</div><div class="stat-val c-blue" id="st-arrival">—</div><div class="stat-sub">個品項（點擊篩選）</div>
       </div>
       <div class="stat-card clickable" onclick="setDealerFilter('none')" title="點擊篩選未填單通路">
         <div class="stat-label">已填單通路</div><div class="stat-val c-amber" id="st-dealers">—</div><div class="stat-sub">/ 全部通路（點擊看未填單）</div>
@@ -503,7 +503,18 @@ function renderStats(){
   const filled=Object.keys(dealers).filter(did=>Object.values(orders[did]||{}).some(o=>o?.qty>0)).length;
   document.getElementById('st-items').textContent=withOrder.length;
   document.getElementById('st-qty').textContent=qty.toLocaleString();
-  document.getElementById('st-moq').textContent=moqLow;
+  // 本週到貨統計
+  const today=new Date(); today.setHours(0,0,0,0);
+  const nextWeek=new Date(today); nextWeek.setDate(today.getDate()+7);
+  let arrivalCount=0;
+  Object.values(products).forEach(prods=>{Object.values(prods).forEach(p=>{
+    const pm=pmDataCache[p.id]||{};
+    const arr=(pm.arrival||p.arrival||'').replace(/\//g,'-');
+    const d=new Date(arr);
+    if(!isNaN(d.getTime())&&d>=today&&d<=nextWeek) arrivalCount++;
+  });});
+  const stArr=document.getElementById('st-arrival');
+  if(stArr) stArr.textContent=arrivalCount;
   document.getElementById('st-dealers').textContent=filled+' / '+Object.keys(dealers).length;
 }
 
