@@ -1031,6 +1031,19 @@ function toggleExpand(pid){
   if(arrow) arrow.textContent=isOpen?'▶':'▼';
 }
 
+function filterArrivalThisWeek(){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const nextWeek=new Date(today); nextWeek.setDate(today.getDate()+7);
+  const filtered=allRows.filter(r=>{
+    const pm=pmDataCache[r.p.id]||{};
+    const arr=pm.arrival||r.p.arrival||'';
+    if(!arr) return false;
+    const d=new Date(arr.replace(/\//g,'-'));
+    return !isNaN(d)&&d>=today&&d<=nextWeek;
+  });
+  renderMainTable(filtered.length?filtered:allRows);
+  if(!filtered.length) showToast('本週無到貨品項');
+}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),2500);}
 </script>
 </body>
