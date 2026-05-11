@@ -262,16 +262,10 @@ const VENDOR_SHORT = { BNE:'BNE', GS:'GSE', SONY:'SONY' };
 
 // 狀態設定（status 空白 = 未設定，由 PM 維護）
 const STATUS_CFG={
-  '':          { label:'—',           color:'var(--text3)',   dot:'#d8dde6' },
-  available:   { label:'可追貨',      color:'var(--text2)',   dot:'#7a8699' },
-  instock:     { label:'現庫可出',    color:'var(--green)',   dot:'#16a34a' },
-  incoming:    { label:'即將到貨',    color:'var(--amber)',   dot:'#d97706' },
-  limited:     { label:'限量出完為止',color:'var(--amber)',   dot:'#d97706' },
-  tbc:         { label:'確認供貨中',  color:'var(--amber)',   dot:'#d97706' },
-  delayed:     { label:'延遲到貨',    color:'var(--red)',     dot:'#dc2626' },
-  unavailable: { label:'無法供應',    color:'var(--text3)',   dot:'#b0b8c8' },
-  clearance:   { label:'專案出清',    color:'var(--purple)',  dot:'#7c3aed' },
-  preorder:    { label:'預購中',      color:'var(--accent)',  dot:'#1d6ef5' },
+  '':           {label:'',             color:'var(--text3)'},
+  'instock':    {label:'🟢 現貨',      color:'#16a34a'},
+  'preorder':   {label:'🔵 預購中',    color:'#1d6ef5'},
+  'unavailable':{label:'🔴 停止供應',  color:'#dc2626'},
 };
 
 // ── Init ──────────────────────────────────────────────────────────────────
@@ -468,7 +462,7 @@ function renderProducts(){
 
   const rows=prods.map(p=>{
     const qty=localOrders[p.id]?.qty||0;
-    const disabled=!isWindowOpen||p.status==='unavailable'||p.status==='clearance';
+    const disabled=!isWindowOpen||p.status==='unavailable';
     // 庫存不顯示給經銷商
     let stockHtml='';
 
@@ -700,7 +694,7 @@ function renderSearchAll(){
     const nearLimit=p.maxOrder&&p.maxOrder>0&&!overLimit&&Math.round(gTotal/p.maxOrder*100)>=80;
     const stk=(_pm.stock!==undefined?_pm.stock:p.stock)||0;
     const ord=parseInt(_pm.vendorOrdered)||0;
-    const disabled=!isWindowOpen||_st==='unavailable'||_st==='clearance';
+    const disabled=!isWindowOpen||_st==='unavailable';
     const sp=_pm.priceSpecial||p.priceSpecial||0;
     const vColor=VENDOR_COLORS[p._vendor]||'var(--text3)';
     const vLabel=VENDOR_SHORT[p._vendor]||p._vendor;

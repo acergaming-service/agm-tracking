@@ -277,13 +277,9 @@ tr:hover td{background:var(--surface2)}
       </select>
       <select class="filter-select" id="cat-status" onchange="renderCatalog()">
         <option value="">全部狀態</option>
-        <option value="instock">現庫可出</option>
-        <option value="incoming">即將到貨</option>
-        <option value="limited">限量</option>
-        <option value="tbc">確認供貨中</option>
-        <option value="available">可追貨</option>
-        <option value="unavailable">無法供應</option>
-        <option value="clearance">專案出清</option>
+        <option value="instock">現貨</option>
+        <option value="preorder">預購中</option>
+        <option value="unavailable">停止供應</option>
       </select>
       <input class="search-box" id="cat-search" placeholder="🔍 搜尋品名或條碼…" oninput="renderCatalog()" style="width:220px">
       <span class="filter-count" id="cat-count" style="margin-left:auto">—</span>
@@ -929,8 +925,7 @@ function renderCatalog(){
 
   document.getElementById('cat-count').textContent=rows.length+' 項';
 
-  const statusLabel={instock:'現庫可出',incoming:'即將到貨',limited:'限量',tbc:'確認供貨中',
-    available:'可追貨',unavailable:'無法供應',clearance:'專案出清',delayed:'延遲',preorder:'預購中'};
+  const statusLabel={instock:'現貨',preorder:'預購中',unavailable:'停止供應'};
   const statusColor={instock:'var(--green)',incoming:'var(--accent)',limited:'var(--amber)',
     tbc:'var(--amber)',available:'var(--text2)',unavailable:'var(--text3)',
     clearance:'var(--purple)',delayed:'var(--red)',preorder:'var(--accent)'};
@@ -968,10 +963,26 @@ function renderCatalog(){
       <td style="font-size:0.82rem;color:${statusColor[pStatus]||'var(--text3)'}">
         ${statusLabel[pStatus]||pStatus||'—'}
       </td>
-      <td style="text-align:right;font-family:var(--mono);color:${stock>0?'var(--green)':'var(--text3)'}">${stock||'—'}</td>
+      <td style="text-align:right">
+        <input type="number" min="0" value="${stock||0}"
+          style="width:70px;text-align:right;font-family:var(--mono);font-size:0.85rem;border:2px solid ${stock>0?'var(--green-b)':'var(--border)'};border-radius:6px;padding:3px 6px;outline:none;background:${stock>0?'var(--green-dim)':'#fff'}"
+          onchange="updateStock('${p.id}','${vendor}',parseInt(this.value)||0,this)">
+      </td>
       <td style="text-align:right;font-family:var(--mono);color:${ordered>0?'var(--accent)':'var(--text3)'}">${ordered||'—'}</td>
     </tr>`;
   }).join('');
+}
+
+async function updateStock(pid, vendor, val, el){
+  el.style.border=`2px solid ${val>0?'var(--green-b)':'var(--border)'}`;
+  el.style.background=val>0?'var(--green-dim)':'#fff';
+  await Promise.all([
+    fbDB.ref(`pmData/${pid}/stock`).set(val),
+    fbDB.ref(`products/${vendor}/${pid}/stock`).set(val),
+  ]);
+  if(!pmDataCache[pid]) pmDataCache[pid]={};
+  pmDataCache[pid].stock=val;
+  showToast('庫存已更新');
 }
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),2500);}

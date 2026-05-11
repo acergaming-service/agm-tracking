@@ -185,7 +185,7 @@ function renderReorderStatus(){
     tbody.innerHTML=`<tr><td colspan="4" style="padding:1.5rem;text-align:center;color:var(--text3)">目前無追加批次紀錄</td></tr>`;
     return;
   }
-  const statusLabel={instock:'現庫可出',incoming:'即將到貨',limited:'限量',tbc:'確認供貨中',available:'可追貨',unavailable:'無法供應',clearance:'出清',delayed:'延遲'};
+  const statusLabel={instock:'現貨',preorder:'預購中',unavailable:'停止供應'};
   tbody.innerHTML=rows.map(({p,pm,reorders,status})=>`<tr>
     <td><span class="platform-tag ${p.platform}" style="font-size:0.72rem;padding:2px 6px">${p.platform}</span></td>
     <td style="font-weight:600;font-size:0.9rem">${p.name}</td>
