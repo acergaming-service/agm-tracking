@@ -432,12 +432,12 @@ window.addEventListener('DOMContentLoaded', async()=>{
   try{
     if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
     fbDB=firebase.database();
-    const[pSnap,dSnap,pmSnap]=await Promise.all([
+    const[prodSnap,dSnap,pmSnap]=await Promise.all([
       fbDB.ref('products').once('value'),
       fbDB.ref('dealers').once('value'),
       fbDB.ref('pmData').once('value'),
     ]);
-    products=pSnap.val()||{}; dealers=dSnap.val()||{}; pmDataCache=pmSnap.val()||{};
+    products=prodSnap.val()||{}; dealers=dSnap.val()||{}; pmDataCache=pmSnap.val()||{};
     populateSalesFilter();
     fbDB.ref('window').on('value',snap=>{winData=snap.val()||{};renderWindowCtrl();});
     fbDB.ref('pmData').on('value',snap=>{pmDataCache=snap.val()||{};});
@@ -909,17 +909,6 @@ function renderCatalog(){
   const platform=document.getElementById('cat-platform')?.value||'';
   const statusFilter=document.getElementById('cat-status')?.value||'';
   const search=(document.getElementById('cat-search')?.value||'').toLowerCase();
-
-  // 直接從 Firebase 重新讀取 products
-  if(!products||Object.keys(products).length===0){
-    document.getElementById('cat-count').textContent='載入中…';
-    document.getElementById('cat-tbody').innerHTML='<tr><td colspan="12" style="padding:2rem;text-align:center;color:var(--text3)">載入中…</td></tr>';
-    fbDB.ref('products').once('value').then(snap=>{
-      products=snap.val()||{};
-      renderCatalog();
-    });
-    return;
-  }
 
   let rows=[];
   Object.entries(products).forEach(([v,prods])=>{
