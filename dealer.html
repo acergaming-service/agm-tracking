@@ -644,6 +644,14 @@ async function submitOrder(){
 // ── 搜尋 ──────────────────────────────────────────────────────────────────
 let searchQuery = '';
 
+function matchesSearch(p){
+  if(!searchQuery) return true;
+  return p.name.toLowerCase().includes(searchQuery) ||
+         (p.barcode && p.barcode.includes(searchQuery)) ||
+         (p.pn && p.pn.toLowerCase().includes(searchQuery)) ||
+         (p.spec && p.spec.toLowerCase().includes(searchQuery));
+}
+
 function onSearch(val){
   searchQuery = val.trim().toLowerCase();
   document.getElementById('clear-search-btn').style.display = searchQuery ? 'block' : 'none';
