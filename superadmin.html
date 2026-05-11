@@ -171,6 +171,7 @@ tr:hover td{background:var(--surface2)}
     <button class="main-tab" onclick="switchTab('reports',this)">📑 報表匯出</button>
     <button class="main-tab" onclick="switchTab('links',this)">🔗 通路連結</button>
     <button class="main-tab" onclick="switchTab('window',this)">📅 週期設定</button>
+    <button class="main-tab" onclick="switchTab('history',this)">📚 歷史紀錄</button>
     <button class="main-tab" onclick="switchTab('system',this)">⚙️ 系統設定</button>
   </div>
 
@@ -437,6 +438,23 @@ tr:hover td{background:var(--surface2)}
     </div>
   </div>
 
+  <!-- ══ 歷史紀錄 ══ -->
+  <div id="tab-history" class="hidden">
+    <div class="add-form">
+      <h3>歷史訂單查閱</h3>
+      <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:1.2rem">
+        <div class="fg" style="flex:0 0 200px">
+          <label>選擇週次</label>
+          <select id="history-week-sel" class="filter-select" onchange="loadHistoryWeek(this.value)" style="width:100%">
+            <option value="">— 選擇週次 —</option>
+          </select>
+        </div>
+        <button class="btn-export" onclick="exportHistoryCSV()">📥 匯出此週 CSV</button>
+      </div>
+      <div id="history-content" style="font-size:0.9rem;color:var(--text2)">請選擇週次查閱歷史訂單</div>
+    </div>
+  </div>
+
   <!-- ══ 系統設定 ══ -->
   <div id="tab-system" class="hidden">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
@@ -525,6 +543,7 @@ tr:hover td{background:var(--surface2)}
       <div class="fg"><label>優惠出貨價（SONY用）</label><input id="ep-price-special" type="number"></div>
       <div class="fg"><label>MOQ（最低訂購量）</label><input id="ep-moq" type="number"></div>
       <div class="fg"><label>上限（maxOrder，空白=無上限）</label><input id="ep-max" type="number" placeholder="—"></div>
+      <div class="fg"><label>AGM 現有庫存</label><input id="ep-stock" type="number" placeholder="0"></div>
       <div class="fg"><label>分配出貨</label>
         <select id="ep-alloc"><option value="false">否</option><option value="true">是（分配出貨）</option></select></div>
       <div class="fg"><label>促銷標籤</label>
@@ -599,10 +618,10 @@ window.addEventListener('DOMContentLoaded',async()=>{
 function switchTab(tab,el){
   activeTab=tab;
   document.querySelectorAll('.main-tab').forEach(t=>t.classList.remove('active')); el.classList.add('active');
-  ['overview','products','moq','dealers','sales','reports','links','window','system'].forEach(t=>{
+  ['overview','products','moq','dealers','sales','reports','links','window','history','system'].forEach(t=>{
     const d=document.getElementById('tab-'+t); if(d) d.classList.toggle('hidden',t!==tab);
   });
-  const renderers={overview:()=>{buildAllRows();renderOverview();},products:renderProducts,moq:renderMOQ,dealers:renderDealers,sales:renderSalesTab,links:renderLinks,window:renderWindowForm,reports:populateReportFilters};
+  const renderers={overview:()=>{buildAllRows();renderOverview();},products:renderProducts,moq:renderMOQ,dealers:renderDealers,sales:renderSalesTab,links:renderLinks,window:renderWindowForm,reports:populateReportFilters,history:loadHistoryList};
   if(renderers[tab]) renderers[tab]();
 }
 
@@ -809,11 +828,15 @@ function renderMOQ(){
     const total=getTotalOrders(p.id);
     const pm=pmData[p.id]||{};
     const ordered=pm.vendorOrdered||'';
+    const stock=pm.stock!==undefined?pm.stock:(p.stock||0);
     const arrival=pm.arrival||p.arrival||'';
     const status=(pm.status!==undefined?pm.status:p.status)??'';
     const pct=p.moq>0?Math.min(100,Math.round(total/p.moq*100)):0;
     const pCls=total===0?'prog-zero':pct>=100?'prog-ok':'prog-low';
-    const remaining=ordered!==''?Math.max(0,parseInt(ordered)-total):'—';
+    const orderedNum=ordered!==''?parseInt(ordered):0;
+    const supply=stock+orderedNum;
+    const gap=supply>0?total-supply:null;
+    const remaining=ordered!==''?Math.max(0,orderedNum-total):'—';
     const remColor=remaining==='—'?'var(--text3)':remaining>0?'var(--green)':'var(--red)';
     const sCls=STATUS_MAP[status]?.cls||'s-empty';
     return `<tr>
@@ -832,10 +855,15 @@ function renderMOQ(){
         <div style="font-size:0.65rem;color:var(--text3);margin-top:2px">${pct}%</div>
       </td>
       <td style="text-align:right">
+        <input class="inline-num ${stock>0?'filled':''}" type="number" min="0" value="${stock}"
+          placeholder="0" onchange="setPMField('${p.id}','stock',parseInt(this.value)||0)">
+      </td>
+      <td style="text-align:right">
         <input class="inline-num ${ordered!==''?'filled':''}" type="number" min="0" value="${ordered}" placeholder="—"
           onchange="setPMField('${p.id}','vendorOrdered',this.value)">
       </td>
-      <td style="text-align:right;font-family:var(--mono);font-weight:700;color:${remColor}">${remaining}</td>
+      <td style="text-align:right;font-family:var(--mono);font-weight:700;color:${supply>0?'var(--green)':'var(--text3)'}">${supply>0?supply:'—'}</td>
+      <td style="text-align:right;font-family:var(--mono);font-weight:700;color:${gap===null?'var(--text3)':gap>0?'var(--red)':gap<0?'var(--green)':'var(--amber)'}">${gap===null?'—':gap>0?'超量+'+gap:gap<0?'餘量'+(-gap):'剛好'}</td>
       <td>
         <select class="inline-select ${sCls}" onchange="setPMField('${p.id}','status',this.value)">
           ${STATUS_OPTS.map(o=>`<option value="${o.v}" ${status===o.v?'selected':''}>${o.l}</option>`).join('')}
@@ -1214,6 +1242,7 @@ function openEditModal(vendor, pid){
   getEl('ep-moq').value=p.moq||0;
   getEl('ep-max').value=p.maxOrder||'';
   getEl('ep-alloc').value=String(p.isAllocation||false);
+  getEl('ep-stock').value=p.stock||0;
   getEl('ep-price-tag').value=p.priceTag||'';
   getEl('ep-gift').value=p.giftItem||'';
   getEl('ep-display-note').value=p.displayNote||'';
@@ -1236,6 +1265,7 @@ async function saveEditModal(){
     moq:parseInt(getEl('ep-moq').value)||0,
     maxOrder:getEl('ep-max').value&&parseInt(getEl('ep-max').value)>0?parseInt(getEl('ep-max').value):0,
     isAllocation:getEl('ep-alloc').value==='true',
+    stock:parseInt(getEl('ep-stock').value)||0,
     priceTag:getEl('ep-price-tag').value,
     giftItem:getEl('ep-gift').value.trim(),
     displayNote:getEl('ep-display-note').value.trim(),
@@ -1245,6 +1275,69 @@ async function saveEditModal(){
   if(!products[vendor]) products[vendor]={};
   Object.assign(products[vendor][pid], updates);
   closeEditModal(); renderProducts(); showToast('品項已更新','green');
+}
+
+// ── 歷史紀錄 ──────────────────────────────────────────────────────────────
+let historyData={};
+async function loadHistoryList(){
+  const snap=await fbDB.ref('orders_archive').once('value');
+  const archive=snap.val()||{};
+  const weeks=Object.keys(archive).sort().reverse();
+  const sel=getEl('history-week-sel');
+  sel.innerHTML='<option value="">— 選擇週次 —</option>'+weeks.map(w=>`<option value="${w}">${w}</option>`).join('');
+  getEl('history-content').textContent=weeks.length?'請選擇週次查閱歷史訂單':'尚無歷史紀錄';
+  historyData=archive;
+}
+async function loadHistoryWeek(week){
+  if(!week){getEl('history-content').textContent='請選擇週次查閱歷史訂單';return;}
+  const data=historyData[week];
+  if(!data){getEl('history-content').textContent='無資料';return;}
+  const orders=data.orders||{};
+  const archivedAt=data.archivedAt?new Date(data.archivedAt).toLocaleString('zh-TW'):'—';
+  let rows=[], totalQty=0, totalItems=0;
+  const allProds=getAllProds();
+  allProds.forEach(p=>{
+    let qty=0;
+    Object.values(orders).forEach(dO=>{const o=(dO||{})[p.id];if(o?.qty>0)qty+=o.qty;});
+    if(qty>0){rows.push({p,qty});totalQty+=qty;totalItems++;}
+  });
+  getEl('history-content').innerHTML=`
+    <div style="margin-bottom:1rem;font-size:0.88rem;color:var(--text2)">
+      歸檔時間：${archivedAt}　有訂單品項：${totalItems} 項　合計：${totalQty.toLocaleString()} 件
+    </div>
+    <div class="tbl-wrap">
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr>
+        <th style="padding:8px 12px;text-align:left;font-size:0.75rem;color:var(--text3);border-bottom:1px solid var(--border);background:var(--surface2)">代理</th>
+        <th style="padding:8px 12px;text-align:left;font-size:0.75rem;color:var(--text3);border-bottom:1px solid var(--border);background:var(--surface2)">品名</th>
+        <th style="padding:8px 12px;text-align:right;font-size:0.75rem;color:var(--text3);border-bottom:1px solid var(--border);background:var(--surface2)">合計數量</th>
+        ${Object.keys(dealers).map(did=>`<th style="padding:8px 12px;text-align:right;font-size:0.72rem;color:var(--text3);border-bottom:1px solid var(--border);background:var(--surface2)">${dealers[did].name}</th>`).join('')}
+      </tr></thead>
+      <tbody>${rows.map(({p,qty})=>`<tr>
+        <td style="padding:7px 12px;font-size:0.8rem;border-bottom:1px solid var(--border)">${VENDOR_LABEL[p.vendor]||p.vendor}</td>
+        <td style="padding:7px 12px;font-size:0.85rem;font-weight:600;border-bottom:1px solid var(--border)">${p.name}</td>
+        <td style="padding:7px 12px;text-align:right;font-family:var(--mono);font-weight:700;border-bottom:1px solid var(--border)">${qty}</td>
+        ${Object.keys(dealers).map(did=>{const o=(orders[did]||{})[p.id];return `<td style="padding:7px 12px;text-align:right;font-family:var(--mono);font-size:0.82rem;border-bottom:1px solid var(--border);color:${o?.qty>0?'var(--text)':'var(--text3)'}">${o?.qty||'—'}</td>`;}).join('')}
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+}
+function exportHistoryCSV(){
+  const week=getEl('history-week-sel').value;
+  if(!week||!historyData[week]){showToast('請先選擇週次','amber');return;}
+  const data=historyData[week].orders||{};
+  const dids=Object.keys(dealers);
+  const headers=['代理商','品名',...dids.map(d=>dealers[d].name),'合計'].join(',');
+  const rows=[headers];
+  getAllProds().forEach(p=>{
+    let total=0;
+    const qties=dids.map(did=>{const o=(data[did]||{})[p.id];const q=o?.qty||0;total+=q;return q;});
+    if(total>0) rows.push([VENDOR_LABEL[p.vendor]||p.vendor,`"${p.name}"`,...qties,total].join(','));
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['﻿'+rows.join('
+')],{type:'text/csv;charset=utf-8'}));
+  a.download=`歷史訂單_${week}.csv`; a.click();
+  showToast('CSV 已匯出','green');
 }
 
 function showToast(msg,type='green'){

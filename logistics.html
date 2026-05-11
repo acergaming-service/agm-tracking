@@ -165,10 +165,16 @@ tr:hover td{background:var(--surface2)}
       <span style="font-size:0.92rem;color:var(--text2);font-weight:500" id="win-week">—</span>
       <button class="btn-toggle btn-close-win" id="win-toggle-btn" onclick="toggleWindow()">關閉收單視窗</button>
       <span style="font-size:0.85rem;color:var(--text3)">關閉後經銷商無法修改訂單</span>
-      <button onclick="showNotifyModal()"
-        style="margin-left:auto;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 18px;font-family:var(--font);font-size:0.9rem;font-weight:700;cursor:pointer">
-        📢 通知 Sales
-      </button>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button onclick="showNotifyModal()"
+          style="background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 18px;font-family:var(--font);font-size:0.9rem;font-weight:700;cursor:pointer">
+          📢 通知 Sales
+        </button>
+        <button onclick="showArchiveModal()"
+          style="background:var(--amber-dim);border:2px solid var(--amber-b);color:var(--amber);border-radius:var(--radius-sm);padding:8px 18px;font-family:var(--font);font-size:0.9rem;font-weight:700;cursor:pointer">
+          📦 結算歸檔
+        </button>
+      </div>
     </div>
 
     <!-- 統計卡片 -->
@@ -214,13 +220,15 @@ tr:hover td{background:var(--surface2)}
       </div>
       <table><thead><tr>
         <th style="width:50px">代理</th>
-        <th style="width:62px">平台</th>
+        <th style="width:58px">平台</th>
         <th>品名</th>
-        <th style="width:62px;text-align:right">MOQ</th>
-        <th style="width:80px;text-align:right">已登記</th>
-        <th style="width:95px;text-align:center">MOQ 狀態</th>
+        <th style="width:55px;text-align:right">MOQ</th>
+        <th style="width:75px;text-align:right">已登記</th>
+        <th style="width:75px;text-align:right">現庫存</th>
+        <th style="width:80px;text-align:right">本週追加</th>
+        <th style="width:80px;text-align:right">可供應</th>
+        <th style="width:80px;text-align:center">缺口</th>
         <th>已填通路</th>
-        <th style="width:110px">未填通路</th>
       </tr></thead><tbody id="main-tbody"></tbody></table>
     </div>
 
@@ -305,6 +313,42 @@ tr:hover td{background:var(--surface2)}
         </div>
         <button class="btn-primary" style="width:fit-content" onclick="saveWindowSettings()">儲存設定</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- 歸檔 Modal -->
+<div class="modal-overlay hidden" id="archive-modal">
+  <div class="modal" style="max-width:500px">
+    <h2 style="margin-bottom:0.8rem">📦 結算歸檔</h2>
+    <p style="font-size:0.9rem;color:var(--text2);margin-bottom:1.2rem;line-height:1.7">
+      將本週所有訂單歸檔後，系統會清空訂單並開啟下一週收單。<br>
+      <strong style="color:var(--red)">⚠ 歸檔後訂單資料將移至歷史紀錄，當週訂單清空。</strong>
+    </p>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1.2rem;font-size:0.9rem">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="color:var(--text3)">歸檔週次</span>
+        <strong id="archive-week">—</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="color:var(--text3)">有訂單品項</span>
+        <strong id="archive-items">—</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--text3)">合計訂購量</span>
+        <strong id="archive-qty">—</strong>
+      </div>
+    </div>
+    <div style="margin-bottom:1rem">
+      <label style="font-size:0.85rem;font-weight:700;color:var(--text2);display:block;margin-bottom:6px">下週週次</label>
+      <input id="archive-next-week" placeholder="2025-W21"
+        style="width:100%;border:2px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;font-family:var(--font);font-size:0.92rem;outline:none">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button onclick="closeArchiveModal()"
+        style="flex:1;background:#fff;border:2px solid var(--border);color:var(--text2);border-radius:var(--radius-sm);padding:10px;font-family:var(--font);font-size:0.92rem;font-weight:600;cursor:pointer">取消</button>
+      <button onclick="confirmArchive()"
+        style="flex:2;background:var(--amber);color:#fff;border:none;border-radius:var(--radius-sm);padding:10px;font-family:var(--font);font-size:0.92rem;font-weight:700;cursor:pointer">確認結算歸檔</button>
     </div>
   </div>
 </div>
@@ -455,6 +499,12 @@ function renderMainTable(rows){
   document.getElementById('tbl-count').textContent=rows.length+' 品項';
   const allDealerIds=Object.keys(dealers);
   document.getElementById('main-tbody').innerHTML=rows.map(({vendor,p,total,dealerQtys,moqStatus})=>{
+    const pm=pmDataCache[p.id]||{};
+    const stock=pm.stock!==undefined?pm.stock:(p.stock||0);
+    const ordered=parseInt(pm.vendorOrdered)||0;
+    const supply=stock+ordered;
+    const supplyGap=supply>0?total-supply:null;
+    const gapLabel=supplyGap===null?'—':supplyGap>0?`<span class="gap-badge gap-need">超量 +${supplyGap}</span>`:supplyGap<0?`<span class="gap-badge gap-ok">餘量 ${-supplyGap}</span>`:`<span class="gap-badge gap-empty">剛好</span>`;
     const gapBadge={
       zero:`<span class="gap-badge gap-empty">無訂單</span>`,
       below:`<span class="gap-badge gap-need">缺 ${(p.moq||0)-total}</span>`,
@@ -464,7 +514,6 @@ function renderMainTable(rows){
     const hasPills=Object.entries(dealerQtys)
       .map(([did,qty])=>`<span class="dp has-order">${dealers[did]?.name||did} ×${qty}</span>`).join('');
     const noneCount=allDealerIds.filter(did=>!dealerQtys[did]).length;
-    const noneText=noneCount>0?`<span style="font-size:0.72rem;color:var(--text3)">（另 ${noneCount} 通路未填）</span>`:'';
     return `<tr>
       <td><span class="vendor-dot v${vendor}"></span><strong style="font-size:0.82rem">${vendor==='GS'?'GSE':vendor}</strong></td>
       <td><span class="platform-tag ${p.platform}">${p.platform}</span></td>
@@ -474,12 +523,11 @@ function renderMainTable(rows){
       </td>
       <td style="text-align:right" class="num">${p.moq||0}</td>
       <td style="text-align:right" class="num ${moqStatus==='below'?'moq-low':moqStatus==='ok'?'moq-ok':moqStatus==='over'?'moq-over':'moq-zero'}">${total}</td>
-      <td style="text-align:center">${gapBadge}</td>
-      <td style="line-height:1.8">${hasPills} ${noneText}</td>
-      <td style="font-size:0.78rem;color:var(--red)">${
-        allDealerIds.filter(did=>!dealerQtys[did]).slice(0,4).map(did=>dealers[did]?.name||did).join(', ')
-        +(allDealerIds.filter(did=>!dealerQtys[did]).length>4?'…':'')
-      }</td>
+      <td style="text-align:right;font-family:var(--mono);font-weight:600;color:${stock>0?'var(--green)':'var(--text3)'}">${stock||'—'}</td>
+      <td style="text-align:right;font-family:var(--mono);font-weight:600;color:${ordered>0?'var(--accent)':'var(--text3)'}">${ordered||'—'}</td>
+      <td style="text-align:right;font-family:var(--mono);font-weight:700;color:${supply>0?'var(--text)':'var(--text3)'}">${supply||'—'}</td>
+      <td style="text-align:center">${gapLabel}</td>
+      <td style="line-height:1.8">${hasPills}${noneCount>0?`<span style="font-size:0.72rem;color:var(--text3)">（另 ${noneCount} 通路未填）</span>`:''}</td>
     </tr>`;
   }).join('');
 }
@@ -740,6 +788,54 @@ function exportSalesCSV(){
   });
   dlCSV(rows.join('\n'),`業務報表_${new Date().toISOString().slice(0,10)}.csv`);
   showToast('業務報表已匯出');
+}
+
+// ── 結算歸檔 ─────────────────────────────────────────────────────────────
+function showArchiveModal(){
+  const week=winData.week||'—';
+  document.getElementById('archive-week').textContent=week;
+  // 計算統計
+  let items=0,qty=0;
+  allRows.forEach(r=>{if(r.total>0){items++;qty+=r.total;}});
+  document.getElementById('archive-items').textContent=items+' 項';
+  document.getElementById('archive-qty').textContent=qty.toLocaleString()+' 件';
+  // 自動產生下週週次
+  if(week&&week.includes('-W')){
+    const[y,w]=week.split('-W').map(Number);
+    const nextW=w>=52?1:w+1;
+    const nextY=w>=52?y+1:y;
+    document.getElementById('archive-next-week').value=`${nextY}-W${String(nextW).padStart(2,'0')}`;
+  }
+  document.getElementById('archive-modal').classList.remove('hidden');
+}
+function closeArchiveModal(){document.getElementById('archive-modal').classList.add('hidden');}
+
+async function confirmArchive(){
+  const week=winData.week;
+  const nextWeek=document.getElementById('archive-next-week').value.trim();
+  if(!week){showToast('請先設定週次再結算');return;}
+  if(!nextWeek){showToast('請填入下週週次');return;}
+  if(!confirm(`確定將 ${week} 的訂單歸檔並清空，開始 ${nextWeek}？`)) return;
+  try{
+    // 1. 讀取目前所有訂單
+    const orderSnap=await fbDB.ref('orders').once('value');
+    const currentOrders=orderSnap.val()||{};
+    // 2. 寫入歷史紀錄
+    await fbDB.ref(`orders_archive/${week}`).set({
+      orders:currentOrders,
+      archivedAt:new Date().toISOString(),
+      week:week,
+    });
+    // 3. 清空訂單
+    await fbDB.ref('orders').remove();
+    // 4. 更新週次並重開收單
+    await fbDB.ref('window').update({week:nextWeek,open:true});
+    orders={}; winData={...winData,week:nextWeek,open:true};
+    closeArchiveModal();
+    buildRows(); renderMainTable(allRows.filter(r=>r.total>0));
+    renderDealerTable(); renderStats(); renderMoqAlerts();
+    showToast(`✅ ${week} 已歸檔，開始 ${nextWeek}`);
+  }catch(e){showToast('歸檔失敗：'+e.message);}
 }
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),2500);}
