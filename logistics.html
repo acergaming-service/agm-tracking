@@ -150,6 +150,7 @@ tr:hover td{background:var(--surface2)}
   <!-- MAIN TABS -->
   <div class="ltab-bar">
     <button class="ltab active" onclick="switchTab('main',this)">📊 統計總覽</button>
+    <button class="ltab" onclick="switchTab('catalog',this)">📋 產品總覽</button>
     <button class="ltab" onclick="switchTab('links',this)">🔗 通路連結</button>
     <button class="ltab" onclick="switchTab('window',this)">📅 週期設定</button>
   </div>
@@ -259,6 +260,54 @@ tr:hover td{background:var(--surface2)}
         <th>通路備註</th>
         <th style="width:80px;text-align:center">操作</th>
       </tr></thead><tbody id="dealer-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- ══ 產品總覽 ══ -->
+  <div id="panel-catalog" class="hidden">
+    <!-- 篩選列 -->
+    <div class="toolbar" style="margin-bottom:1.2rem">
+      <select class="filter-select" id="cat-vendor" onchange="renderCatalog()">
+        <option value="">全部代理商</option>
+        <option value="BNE">BNE</option><option value="GS">GSE</option><option value="SONY">SONY</option>
+      </select>
+      <select class="filter-select" id="cat-platform" onchange="renderCatalog()">
+        <option value="">全部平台</option>
+        <option>NS</option><option>NS2</option><option>PS5</option><option>PS4</option><option>VR</option>
+      </select>
+      <select class="filter-select" id="cat-status" onchange="renderCatalog()">
+        <option value="">全部狀態</option>
+        <option value="instock">現庫可出</option>
+        <option value="incoming">即將到貨</option>
+        <option value="limited">限量</option>
+        <option value="tbc">確認供貨中</option>
+        <option value="available">可追貨</option>
+        <option value="unavailable">無法供應</option>
+        <option value="clearance">專案出清</option>
+      </select>
+      <input class="search-box" id="cat-search" placeholder="🔍 搜尋品名或條碼…" oninput="renderCatalog()" style="width:220px">
+      <span class="filter-count" id="cat-count" style="margin-left:auto">—</span>
+    </div>
+
+    <div class="tbl-wrap">
+      <div class="tbl-header">
+        <span class="tbl-title">全品項資訊總覽</span>
+        <span style="font-size:0.82rem;color:var(--text2);margin-left:auto">含到貨日、MOQ、訂購狀況</span>
+      </div>
+      <table><thead><tr>
+        <th style="width:50px">代理</th>
+        <th style="width:58px">平台</th>
+        <th style="width:65px">類型</th>
+        <th>品名</th>
+        <th style="width:62px;text-align:right">MOQ</th>
+        <th style="width:75px;text-align:right">已登記</th>
+        <th style="width:85px;text-align:center">MOQ狀態</th>
+        <th style="width:120px">到貨日</th>
+        <th style="width:130px">追加批次</th>
+        <th style="width:115px">貨物狀態</th>
+        <th style="width:80px;text-align:right">現庫存</th>
+        <th style="width:85px;text-align:right">本週追加</th>
+      </tr></thead><tbody id="cat-tbody"></tbody></table>
     </div>
   </div>
 
@@ -410,7 +459,7 @@ window.addEventListener('DOMContentLoaded', async()=>{
 // ── Tab 切換 ─────────────────────────────────────────────────────────────────
 function switchTab(tab, el){
   document.querySelectorAll('.ltab').forEach(t=>t.classList.remove('active')); el.classList.add('active');
-  ['main','links','window'].forEach(t=>{document.getElementById('panel-'+t).classList.toggle('hidden',t!==tab);});
+  ['main','catalog','links','window'].forEach(t=>{document.getElementById('panel-'+t).classList.toggle('hidden',t!==tab);});
   if(tab==='links') renderLogLinks();
   if(tab==='window') renderWindowForm();
 }
@@ -851,6 +900,74 @@ async function confirmArchive(){
     renderDealerTable(); renderStats(); renderMoqAlerts();
     showToast(`✅ ${week} 已歸檔，開始 ${nextWeek}`);
   }catch(e){showToast('歸檔失敗：'+e.message);}
+}
+
+// ── 產品總覽 ────────────────────────────────────────────────────────────────
+function renderCatalog(){
+  const vendor=document.getElementById('cat-vendor')?.value||'';
+  const platform=document.getElementById('cat-platform')?.value||'';
+  const status=document.getElementById('cat-status')?.value||'';
+  const search=(document.getElementById('cat-search')?.value||'').toLowerCase();
+
+  let rows=[];
+  Object.entries(products).forEach(([v,prods])=>{
+    if(vendor&&v!==vendor) return;
+    Object.values(prods).forEach(p=>{
+      const pm=pmDataCache[p.id]||{};
+      const pStatus=(pm.status!==undefined?pm.status:p.status)||'';
+      if(platform&&p.platform!==platform) return;
+      if(status&&pStatus!==status) return;
+      if(search&&!p.name.toLowerCase().includes(search)&&!(p.barcode||'').includes(search)) return;
+      const total=Object.values(orders).reduce((s,dO)=>s+((dO||{})[p.id]?.qty||0),0);
+      rows.push({vendor:v,p,pm,total,pStatus});
+    });
+  });
+
+  document.getElementById('cat-count').textContent=rows.length+' 項';
+
+  const statusLabel={instock:'現庫可出',incoming:'即將到貨',limited:'限量',tbc:'確認供貨中',
+    available:'可追貨',unavailable:'無法供應',clearance:'專案出清',delayed:'延遲',preorder:'預購中'};
+  const statusColor={instock:'var(--green)',incoming:'var(--accent)',limited:'var(--amber)',
+    tbc:'var(--amber)',available:'var(--text2)',unavailable:'var(--text3)',
+    clearance:'var(--purple)',delayed:'var(--red)',preorder:'var(--accent)'};
+
+  document.getElementById('cat-tbody').innerHTML=rows.map(({vendor,p,pm,total,pStatus})=>{
+    const arrival=pm.arrival||p.arrival||'';
+    const stock=pm.stock!==undefined?pm.stock:(p.stock||0);
+    const ordered=parseInt(pm.vendorOrdered)||0;
+    const reorders=pm.reorders||[];
+    const moq=p.moq||0;
+    let moqBadge='<span style="color:var(--text3);font-size:0.8rem">—</span>';
+    if(total>0&&total<moq) moqBadge=`<span style="color:var(--red);font-weight:700;font-size:0.8rem">缺 ${moq-total}</span>`;
+    else if(total>=moq&&total>0) moqBadge=`<span style="color:var(--green);font-weight:700;font-size:0.8rem">✅ 達標</span>`;
+    else if(total===0&&moq>0) moqBadge=`<span style="color:var(--text3);font-size:0.8rem">未收單</span>`;
+
+    // 追加批次
+    const reorderHtml=reorders.length
+      ? reorders.slice(-2).map((r,i)=>`<div style="font-size:0.78rem;color:var(--amber);font-weight:600">${r.arrival} ${r.qty?'×'+r.qty:''}</div>`).join('')
+        +(reorders.length>2?`<div style="font-size:0.72rem;color:var(--text3)">共 ${reorders.length} 批次</div>`:'')
+      : '<span style="color:var(--text3);font-size:0.78rem">—</span>';
+
+    return `<tr>
+      <td style="font-size:0.78rem;font-weight:700;color:var(--text2)">${vendor==='GS'?'GSE':vendor}</td>
+      <td><span class="platform-tag ${p.platform}">${p.platform}</span></td>
+      <td style="font-size:0.75rem;color:var(--text3)">${p.category||''}</td>
+      <td>
+        <div style="font-weight:600;font-size:0.88rem">${p.name}</div>
+        ${p.barcode?`<div style="font-family:var(--mono);font-size:0.72rem;color:var(--text3)">國條:${p.barcode}</div>`:''}
+      </td>
+      <td style="text-align:right;font-family:var(--mono)">${moq||'—'}</td>
+      <td style="text-align:right;font-family:var(--mono);font-weight:700;color:${total>0?'var(--text)':'var(--text3)'}">${total||'—'}</td>
+      <td style="text-align:center">${moqBadge}</td>
+      <td style="font-size:0.85rem;font-weight:600;color:var(--amber)">${arrival||'—'}</td>
+      <td>${reorderHtml}</td>
+      <td style="font-size:0.82rem;color:${statusColor[pStatus]||'var(--text3)'}">
+        ${statusLabel[pStatus]||pStatus||'—'}
+      </td>
+      <td style="text-align:right;font-family:var(--mono);color:${stock>0?'var(--green)':'var(--text3)'}">${stock||'—'}</td>
+      <td style="text-align:right;font-family:var(--mono);color:${ordered>0?'var(--accent)':'var(--text3)'}">${ordered||'—'}</td>
+    </tr>`;
+  }).join('');
 }
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),2500);}
