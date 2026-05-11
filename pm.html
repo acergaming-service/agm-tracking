@@ -122,7 +122,7 @@ tr:hover td{background:var(--surface2)}
   </div>
 </nav>
 <div class="container">
-  <div class="page-header"><h1>商品 ＆ MOQ 管理</h1><p>維護品項狀態、到貨日、向原廠下單量</p></div>
+  <div class="page-header"><h1>商品管理</h1><p>新增品項、設定 MOQ、維護庫存與到貨狀態，結算資訊請至後勤統計</p></div>
   <div class="tabs">
     <button class="tab active" onclick="switchTab('products',this)">📦 商品管理</button>
     <button class="tab" onclick="switchTab('moq',this)">📋 向原廠追加下單</button>
@@ -257,7 +257,7 @@ tr:hover td{background:var(--surface2)}
         <th style="width:120px">狀態</th>
         <th style="width:118px">到貨日</th>
         <th style="width:55px;text-align:center">編輯</th>
-        <th style="width:40px"></th>
+        
       </tr></thead><tbody id="prod-tbody"></tbody></table>
     </div>
   </div>
@@ -268,21 +268,19 @@ tr:hover td{background:var(--surface2)}
   <div style="background:#fff;border-radius:var(--radius);padding:2rem;width:100%;max-width:720px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);scroll-behavior:smooth">
     <h2 style="font-size:1.2rem;font-weight:900;margin-bottom:1.5rem">✏️ 編輯品項</h2>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.2rem">
-      <div class="fg" style="grid-column:1/-1"><label>中文品名</label><input id="ep-name"></div>
+      <div class="fg" style="grid-column:1/-1"><label>中文品名</label><input id="ep-name" disabled style="background:var(--surface2);cursor:not-allowed;color:var(--text3)"></div>
       <div class="fg"><label>代理商</label>
         <select id="ep-vendor" disabled style="background:var(--surface2);cursor:not-allowed">
           <option value="BNE">BNE</option><option value="GS">GSE</option><option value="SONY">SONY</option>
         </select></div>
-      <div class="fg"><label>平台</label>
-        <select id="ep-platform"><option>NS</option><option>NS2</option><option>PS5</option><option>PS4</option><option>VR</option></select></div>
-      <div class="fg"><label>類型</label>
-        <select id="ep-category"><option>軟體</option><option>主機</option><option>周邊</option><option>女性向</option><option>誠翼</option><option>OLP</option><option>PS4 HITS</option><option>SEGA</option><option>VR</option><option>軟體(三廠)</option></select></div>
-      <div class="fg"><label>AGBS P/N</label><input id="ep-pn" placeholder="ZL.A00TZ.XXX"></div>
-      <div class="fg"><label>國際條碼 (EAN)</label><input id="ep-barcode" placeholder="4713014XXXXXX"></div>
-      <div class="fg"><label>規格 / 型號</label><input id="ep-spec"></div>
-      <div class="fg"><label>SRP（含稅）</label><input id="ep-srp" type="number"></div>
-      <div class="fg"><label>出貨價（未稅）</label><input id="ep-price" type="number"></div>
-      <div class="fg"><label>優惠出貨價</label><input id="ep-price-special" type="number"></div>
+      <div class="fg"><label>平台</label><select id="ep-platform" disabled style="background:var(--surface2);cursor:not-allowed;color:var(--text3)"><option>NS</option><option>NS2</option><option>PS5</option><option>PS4</option><option>VR</option></select></div>
+      <div class="fg"><label>類型</label><select id="ep-category" disabled style="background:var(--surface2);cursor:not-allowed;color:var(--text3)"><option>軟體</option><option>主機</option><option>周邊</option><option>女性向</option><option>誠翼</option><option>OLP</option><option>PS4 HITS</option><option>SEGA</option><option>VR</option><option>軟體(三廠)</option></select></div>
+      <div class="fg"><label>AGBS P/N</label><input id="ep-pn" placeholder="ZL.A00TZ.XXX" disabled style="background:var(--surface2);cursor:not-allowed;color:var(--text3)"></div>
+      <div class="fg"><label>國際條碼 (EAN)</label><input id="ep-barcode" placeholder="4713014XXXXXX" disabled style="background:var(--surface2);cursor:not-allowed;color:var(--text3)"></div>
+      <div class="fg"><label>規格 / 型號</label><input id="ep-spec" disabled style="background:var(--surface2);cursor:not-allowed;color:var(--text3)"></div>
+      <div class="fg"><label>SRP（含稅）</label><input id="ep-srp" type="number" disabled style="background:var(--surface2);cursor:not-allowed;color:var(--text3)"></div>
+      <div class="fg"><label>出貨價（未稅）</label><input id="ep-price" type="number" disabled style="background:var(--surface2);cursor:not-allowed;color:var(--text3)"></div>
+      <div class="fg"><label>優惠出貨價</label><input id="ep-price-special" type="number" disabled style="background:var(--surface2);cursor:not-allowed;color:var(--text3)"></div>
       <div class="fg"><label>MOQ（最低訂購量）</label><input id="ep-moq" type="number"></div>
       <div class="fg"><label>上限（maxOrder，空白=無上限）</label><input id="ep-max" type="number" placeholder="—"></div>
       <div class="fg"><label>分配出貨</label>
@@ -532,7 +530,7 @@ function renderProducts(){
         <button class="btn-sm" style="padding:3px 10px;font-size:0.78rem;font-weight:700"
           onclick="openEditModal('${p.vendor}','${p.id}')">✏️</button>
       </td>
-      <td><button class="btn-del" onclick="deleteProd('${p.vendor}','${p.id}')">刪除</button></td>
+
     </tr>`;
   }).join('');
 }
