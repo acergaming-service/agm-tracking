@@ -1,165 +1,133 @@
-# 遊戲片追貨平台 — 部署說明
+# 遊戲片追貨平台 — 使用說明
 
-## 第一步：建立 Firebase 專案
-
-1. 開啟 [https://console.firebase.google.com](https://console.firebase.google.com)
-2. 點「建立專案」→ 輸入名稱（例如 `agm-tracking`）→ 建立
-3. 左側選單 → **Realtime Database** → 「建立資料庫」
-   - 選擇亞洲節點：`asia-southeast1`（新加坡，台灣最近）
-   - 安全規則先選「**以測試模式啟動**」（之後再鎖定）
-4. 左側 → **專案設定**（齒輪圖示）→ 「一般」→ 向下滾到「您的應用程式」
-5. 點「新增應用程式」→ 選網頁（`</>`）→ 輸入暱稱 → 不勾 Firebase Hosting → 「註冊應用程式」
-6. 複製 `firebaseConfig` 物件（格式如下）：
-
-```js
-const firebaseConfig = {
-  apiKey: "AIza...",
-  authDomain: "agm-tracking.firebaseapp.com",
-  databaseURL: "https://agm-tracking-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "agm-tracking",
-  storageBucket: "agm-tracking.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef"
-};
-```
+**正式網址：** https://acergaming-service.github.io/agm-tracking/
+**GitHub：** acergaming-service/agm-tracking
+**資料庫：** Firebase Realtime Database（asia-southeast1）
 
 ---
 
-## 第二步：填入設定到程式碼
+## 各角色入口與密碼
 
-在以下 **4 個檔案**中，找到 `FIREBASE_CONFIG` 區塊，把 `YOUR_*` 全部換成上面複製的值：
+| 角色 | 入口 | 密碼/方式 |
+|------|------|---------|
+| 經銷商 | `dealer.html?code=XX2025` | 無需密碼，由業務提供專屬連結 |
+| 業務 AGM | `index.html` → 選業務姓名 | 無需密碼 |
+| 後勤統計 | `index.html` → 後勤統計 | `agm2025` |
+| PM 管理 | `index.html` → PM 管理 | `pm2025` |
+| Super Admin | `index.html` → Super Admin | `super2025` |
 
-- `dealer.html`
-- `logistics.html`
-- `sales.html`
-- `pm.html`
-
-每個檔案裡找這段並替換：
-
-```js
-const FIREBASE_CONFIG = {
-  apiKey:            "YOUR_API_KEY",          // ← 換成你的
-  authDomain:        "YOUR_PROJECT.firebaseapp.com",
-  databaseURL:       "https://YOUR_PROJECT-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId:         "YOUR_PROJECT",
-  storageBucket:     "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId:             "YOUR_APP_ID"
-};
-```
-
-> **搜尋技巧**：用文字編輯器（VSCode / 記事本）開檔案，`Ctrl+H` 全部取代：
-> - 找：`YOUR_API_KEY` → 換成你的 apiKey
-> - 找：`YOUR_PROJECT` → 換成你的 projectId（出現多次，一次全換）
+> 密碼修改方式：編輯 `index.html`，搜尋對應密碼字串直接替換。
 
 ---
 
-## 第三步：初始化資料庫資料
+## 首次設定（必做）
 
-**首次部署必做**，把商品主檔和通路資料寫入 Firebase：
-
-### 方法 A：透過 Firebase Console（最簡單）
-
-1. 開啟 Firebase Console → Realtime Database
-2. 點右上角「⋮」→「匯入 JSON」
-3. 上傳 `seed_data.json`（如果有的話），或直接用方法 B
-
-### 方法 B：瀏覽器 Console
-
-1. 部署完畢後，用 `pm2025` 登入 PM 管理頁
-2. 打開瀏覽器開發者工具（F12）→ Console 分頁
-3. 貼入以下指令並執行：
-
-```js
-// 將 firebase.js 裡 DEFAULT_PRODUCTS 和 DEFAULT_DEALERS 的內容
-// 貼到這裡執行，或直接在 Firebase Console 手動建立測試資料
-firebase.database().ref('window').set({ open: true, week: '2025-W20' });
-```
-
-4. 之後商品和通路都可以透過 PM 管理頁的「商品管理」介面新增，不需要手動操作資料庫。
-
----
-
-## 第四步：部署到 Netlify（推薦）
-
-### 4a. Netlify Drop（拖曳上傳，最快）
-
-1. 開啟 [app.netlify.com/drop](https://app.netlify.com/drop)
-2. 把整個 `platform/` 資料夾拖進去
-3. 等幾秒，拿到網址（例如 `https://random-name-123.netlify.app`）
-4. 完成！
-
-### 4b. 自訂網域（選用）
-
-1. Netlify → 你的網站 → **Domain management** → Add domain
-2. 按照指示設定 DNS
-
----
-
-## 第五步：鎖定 Firebase 安全規則（正式上線前必做）
-
-Firebase Console → Realtime Database → **規則** 分頁，把規則改成：
-
-```json
-{
-  "rules": {
-    "products": {
-      ".read": true,
-      ".write": false
-    },
-    "dealers": {
-      ".read": true,
-      ".write": false
-    },
-    "window": {
-      ".read": true,
-      ".write": true
-    },
-    "orders": {
-      ".read": true,
-      ".write": true
-    },
-    "pmData": {
-      ".read": true,
-      ".write": true
-    }
-  }
-}
-```
-
-> **說明**：目前規則是全開（測試用），正式上線前至少把 `products` 和 `dealers` 的 write 關掉，防止外部人員亂改主檔。
-> 如果要更嚴格的控制，需要加入 Firebase Authentication，這屬於進階設定。
-
----
-
-## 各角色使用方式
-
-| 角色 | 入口 | 存取碼 |
-|------|------|--------|
-| 經銷商 | `dealer.html?code=WQ2025`（各通路代碼不同） | 無需密碼 |
-| 業務 AGM | `index.html` → 選業務 | 無需密碼 |
-| 後勤統計 | `index.html` → 選後勤統計 | `agm2025` |
-| PM 管理 | `index.html` → 選 PM 管理 | `pm2025` |
-
-### 取得各通路連結
+### 1. 初始化資料庫
 
 1. 用 `pm2025` 登入 PM 管理
-2. 點「📎 通路連結」頁籤
-3. 點「複製全部連結」→ 貼到 Email 或 Line 傳給各業務
-4. 業務再把各通路的連結傳給對應通路
+2. 點右上角「**初始化資料庫**」
+3. 確認 → 系統會寫入所有商品資料
+
+### 2. 新增缺少的通路
+
+1. 用 `super2025` 登入 Super Admin
+2. 點「**⚙️ 系統設定**」Tab
+3. 點「**＋ 補齊缺少的通路**」→ 一鍵新增所有通路
+
+### 3. 設定收單週期
+
+1. 後勤統計 → **週期設定** Tab
+2. 填入週次（如 `2025-W20`）、收單起始/截止時間
+3. 確認「開放收單中」→ 儲存
+
+### 4. 發送通路連結
+
+1. Super Admin → **通路連結** Tab
+2. 「複製全部連結」→ 發給各業務轉發給通路
+
+---
+
+## 各角色功能說明
+
+### 🏪 經銷商
+- 進入專屬連結，依代理商（BNE / GSE / SONY）和平台分類填寫訂購數量
+- 送出時可附加備註
+- 顯示現貨/預購標籤、到貨日、促銷資訊
+
+### 💼 業務 AGM
+- 查看自己轄區通路的填單狀況
+- 查看 MOQ 缺口警示
+- 查看追加到貨批次狀況
+
+### 📊 後勤統計
+- **統計總覽**：全品項訂單、MOQ 狀態、缺口警示、通知 Sales
+- **產品總覽**：所有品項的到貨日、MOQ、訂購狀況一覽
+- **通路連結**：各通路專屬連結管理
+- **週期設定**：開關收單視窗、起始/截止時間
+- **結算歸檔**：結算後歸檔訂單、自動開啟下週
+- **匯出報表**：後勤報表 / 業務報表
+
+### ⚙️ PM 管理
+- **商品清單**：新增品項、設定 MOQ、維護到貨日與狀態
+- **追加下單**：後勤通知追加量後，新增追加批次（到貨日/數量/備註）
+
+### 🔑 Super Admin
+- 所有角色的完整權限
+- 通路管理（新增/刪除/業務調整）
+- 業務名單管理
+- 三種報表匯出（後勤/業務/經銷商）
+- 歷史訂單查閱
+- 系統設定與危險操作
+
+---
+
+## 常用操作流程
+
+### 每週收單流程
+1. **後勤**：週期設定 → 設定起止時間 → 開放收單
+2. **業務**：發送通路連結給各經銷商
+3. **經銷商**：填寫訂購數量 → 送出
+4. **後勤**：統計總覽監控 MOQ 狀態 → 通知 Sales 催單
+5. **後勤**：收單截止 → 結算歸檔 → 通知 PM 追加數量
+
+### 追加補貨流程
+1. **後勤**：在 Super Admin / 追加下單頁填入追加量
+2. **PM**：追加下單 Tab → 新增批次（填入追加到貨日）
+3. **前台**：自動更新顯示最新追加到貨日
+
+---
+
+## 通路代碼對照（部分）
+
+| 通路 | 代碼 | 業務 |
+|------|------|------|
+| 王碁 | WQ | Edward |
+| 普雷伊 | PL | Edward |
+| 摩力科 | ML | Hsinhui |
+| MOMO | MM | Mickey |
+| YAHOO | YH | Wythe |
+| 順發 | SF | AKI |
+| 神腦 | SN | Tom |
+| AGM EC | AE | Meg |
+
+> 完整通路連結：Super Admin → 通路連結 Tab
 
 ---
 
 ## 常見問題
 
-**Q: 換電腦還看得到資料嗎？**
-A: 可以。資料存在 Firebase 雲端，任何裝置開啟連結都能看到。
+**Q：換電腦還看得到資料嗎？**
+A：可以，資料存在 Firebase 雲端。
 
-**Q: 修改後需要重新上傳嗎？**
-A: 需要。Netlify Drop 重新拖曳資料夾就會更新；或連結 GitHub 可以自動部署。
+**Q：如何修改密碼？**
+A：編輯 `index.html`，搜尋 `agm2025` / `pm2025` / `super2025` 替換即可。
 
-**Q: 免費方案有限制嗎？**
-A: Firebase Realtime Database 免費方案：1GB 儲存 + 每月 10GB 流量，追貨系統用量遠低於上限。
+**Q：如何新增業務或通路？**
+A：Super Admin → 業務管理 / 通路管理。
 
-**Q: 可以改密碼嗎？**
-A: 目前密碼寫在 `index.html` 的 JS 裡，直接改 `agm2025` / `pm2025` 這兩個字串即可。
+**Q：歷史訂單在哪裡查？**
+A：Super Admin → 歷史紀錄 Tab，選擇週次查閱。
+
+**Q：Firebase 安全規則要鎖定嗎？**
+A：目前為測試模式，正式長期使用前建議至 Firebase Console 鎖定規則。
+連結：https://console.firebase.google.com/project/agm-tracking/database/agm-tracking-default-rtdb/rules
