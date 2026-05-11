@@ -228,6 +228,7 @@ tr:hover td{background:var(--surface2)}
         <th style="width:80px;text-align:right">本週追加</th>
         <th style="width:80px;text-align:right">可供應</th>
         <th style="width:80px;text-align:center">缺口</th>
+        <th style="width:160px">追加批次</th>
         <th>已填通路</th>
       </tr></thead><tbody id="main-tbody"></tbody></table>
     </div>
@@ -527,6 +528,20 @@ function renderMainTable(rows){
       <td style="text-align:right;font-family:var(--mono);font-weight:600;color:${ordered>0?'var(--accent)':'var(--text3)'}">${ordered||'—'}</td>
       <td style="text-align:right;font-family:var(--mono);font-weight:700;color:${supply>0?'var(--text)':'var(--text3)'}">${supply||'—'}</td>
       <td style="text-align:center">${gapLabel}</td>
+      <td style="padding:6px 12px">
+        ${(()=>{
+          const reorders=(pm.reorders||[]);
+          if(!reorders.length) return '<span style="font-size:0.8rem;color:var(--text3)">—</span>';
+          return reorders.slice().reverse().map((r,i)=>
+            `<div style="font-size:0.8rem;line-height:1.6;display:flex;gap:6px;align-items:center">
+              <span style="color:var(--text3);font-size:0.72rem">#${reorders.length-i}</span>
+              <span style="font-weight:600;color:var(--amber)">${r.arrival||'—'}</span>
+              ${r.qty?`<span style="color:var(--text3)">×${r.qty}</span>`:''}
+              ${r.note?`<span style="color:var(--text2);font-size:0.75rem">${r.note}</span>`:''}
+            </div>`
+          ).join('');
+        })()}
+      </td>
       <td style="line-height:1.8">${hasPills}${noneCount>0?`<span style="font-size:0.72rem;color:var(--text3)">（另 ${noneCount} 通路未填）</span>`:''}</td>
     </tr>`;
   }).join('');

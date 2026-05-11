@@ -87,6 +87,16 @@ tr:hover td{background:var(--surface2)}
     <div class="stat-card"><div class="stat-label">MOQ 需確認</div><div class="stat-val c-amber" id="st-moq">—</div></div>
   </div>
   <div id="dealer-grid" class="dealer-grid"></div>
+  <!-- 追加批次狀況 -->
+  <div class="tbl-wrap" style="margin-bottom:1.5rem">
+    <div class="tbl-header"><span class="tbl-title">📦 追加到貨狀況</span><span style="font-size:0.82rem;color:var(--text2);margin-left:auto">有追加批次的品項</span></div>
+    <table><thead><tr>
+      <th style="width:58px">平台</th><th>品名</th>
+      <th style="width:200px">追加批次紀錄</th>
+      <th style="width:120px">目前狀態</th>
+    </tr></thead><tbody id="reorder-tbody"></tbody></table>
+  </div>
+
   <div class="tbl-wrap" id="moq-wrap">
     <div class="tbl-header"><span class="tbl-title">⚠️ 本週 MOQ 缺口警示</span></div>
     <table><thead><tr>
@@ -153,6 +163,42 @@ function renderAll(){
        <td style="text-align:center"><span class="gap-badge gap-need">缺 ${p.moq-total}</span></td>
       </tr>`).join('');
   }
+}
+
+function renderReorderStatus(){
+  const tbody=document.getElementById('reorder-tbody');
+  if(!tbody) return;
+  const myDealerIds=Object.keys(dealers).filter(id=>dealers[id].sales===mySalesName);
+  const allProds=Object.values(products).flatMap(ps=>Object.values(ps));
+  const rows=[];
+  allProds.forEach(p=>{
+    const pm=pmData[p.id]||{};
+    const reorders=pm.reorders||[];
+    if(!reorders.length) return;
+    // 只顯示業務轄區有下單的品項
+    const hasMyOrder=myDealerIds.some(did=>(orders[did]||{})[p.id]?.qty>0);
+    if(!hasMyOrder) return;
+    const status=(pm.status!==undefined?pm.status:p.status)||'';
+    rows.push({p,pm,reorders,status});
+  });
+  if(!rows.length){
+    tbody.innerHTML=`<tr><td colspan="4" style="padding:1.5rem;text-align:center;color:var(--text3)">目前無追加批次紀錄</td></tr>`;
+    return;
+  }
+  const statusLabel={instock:'現庫可出',incoming:'即將到貨',limited:'限量',tbc:'確認供貨中',available:'可追貨',unavailable:'無法供應',clearance:'出清',delayed:'延遲'};
+  tbody.innerHTML=rows.map(({p,pm,reorders,status})=>`<tr>
+    <td><span class="platform-tag ${p.platform}" style="font-size:0.72rem;padding:2px 6px">${p.platform}</span></td>
+    <td style="font-weight:600;font-size:0.9rem">${p.name}</td>
+    <td style="padding:6px 12px">
+      ${reorders.slice().reverse().map((r,i)=>`<div style="font-size:0.82rem;display:flex;gap:8px;align-items:center;padding:2px 0">
+        <span style="color:var(--text3);font-size:0.72rem">#${reorders.length-i}</span>
+        <span style="font-weight:600;color:var(--amber)">${r.arrival||'—'}</span>
+        ${r.qty?`<span style="color:var(--text3)">×${r.qty}</span>`:''}
+        ${r.note?`<span style="color:var(--text2);font-size:0.75rem">${r.note}</span>`:''}
+      </div>`).join('')}
+    </td>
+    <td style="font-size:0.85rem;color:var(--text2)">${statusLabel[status]||status||'—'}</td>
+  </tr>`).join('');
 }
 </script>
 </body>

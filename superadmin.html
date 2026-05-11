@@ -266,7 +266,7 @@ tr:hover td{background:var(--surface2)}
       <span class="filter-count" id="prod-count">—</span>
     </div>
     <div class="tbl-wrap">
-      <div class="tbl-header"><span class="tbl-title">所有品項清單</span></div>
+      <div class="tbl-header"><span class="tbl-title">所有品項清單</span><span style="font-size:0.82rem;color:var(--text3);margin-left:8px">MOQ = 第一批收單門檻，後續追加不受限制</span></div>
       <table><thead><tr>
         <th style="width:45px">代理</th><th style="width:55px">平台</th><th style="width:65px">類型</th>
         <th>品名</th><th style="width:100px">AGBS P/N</th><th style="width:105px">國際條碼</th><th style="width:62px">規格</th>
@@ -746,18 +746,16 @@ function renderProducts(){
     const arrival=pm.arrival||p.arrival||'';
     const sCls=STATUS_MAP[status]?.cls||'s-empty';
     return `<tr>
-      <td style="font-size:0.75rem;font-weight:700">${VENDOR_LABEL[p.vendor]||p.vendor}</td>
-      <td><span class="platform-tag ${p.platform}">${p.platform}</span></td>
-      <td style="font-size:0.75rem;color:var(--text3)">${p.category||''}</td>
       <td>
-        <div style="font-weight:600;font-size:0.85rem">${p.name}</div>
-        ${p.isAllocation?`<span style="font-size:0.68rem;background:var(--amber-dim);color:var(--amber);padding:1px 5px;border-radius:3px;font-weight:700">⚠分配</span>`:''}
+        <div style="font-weight:600;font-size:0.88rem">${p.name}</div>
+        <div style="font-family:var(--mono);font-size:0.72rem;color:var(--text3);margin-top:2px">
+          ${p.pn&&p.pn!=='—'?p.pn:''}${p.barcode?' · '+p.barcode:''}
+          ${p.isAllocation?'　⚠分配':''}
+        </div>
       </td>
-      <td style="font-family:var(--mono);font-size:0.78rem;color:var(--text2)">${p.pn&&p.pn!=='—'?p.pn:'—'}</td>
-      <td style="font-family:var(--mono);font-size:0.78rem;color:var(--text3)">${p.barcode||'—'}</td>
-      <td style="font-size:0.78rem;color:var(--text3)">${p.spec||''}</td>
-      <td style="text-align:right;font-family:var(--mono);font-size:0.82rem">${(p.srp||0).toLocaleString()}</td>
-      <td style="text-align:right;font-family:var(--mono);font-size:0.82rem">${(p.price||0).toLocaleString()}</td>
+      <td><span class="platform-tag ${p.platform}">${p.platform}</span><br><span style="font-size:0.72rem;color:var(--text3)">${p.category||''}</span></td>
+      <td style="text-align:right;font-family:var(--mono);font-size:0.85rem">${(p.srp||0).toLocaleString()}</td>
+      <td style="text-align:right;font-family:var(--mono);font-size:0.85rem">${(p.price||0).toLocaleString()}</td>
       <td style="text-align:right">
         <input class="inline-num" type="number" min="0" value="${p.moq||0}"
           onchange="updateProd('${p.vendor}','${p.id}','moq',parseInt(this.value)||0)">
@@ -1228,7 +1226,14 @@ async function seedDB(){
 let _editVendor='', _editPid='';
 function openEditModal(vendor, pid){
   _editVendor=vendor; _editPid=pid;
-  const p=(products[vendor]||{})[pid]; if(!p) return;
+  let p=(products[vendor]||{})[pid];
+  // fallback：遍歷所有代理商找 pid
+  if(!p){
+    for(const [v,ps] of Object.entries(products)){
+      if(ps[pid]){p=ps[pid];_editVendor=v;break;}
+    }
+  }
+  if(!p){showToast('找不到品項，請重新整理頁面','red');return;}
   getEl('ep-name').value=p.name||'';
   getEl('ep-vendor').value=vendor;
   getEl('ep-platform').value=p.platform||'NS';
@@ -1334,8 +1339,7 @@ function exportHistoryCSV(){
     if(total>0) rows.push([VENDOR_LABEL[p.vendor]||p.vendor,`"${p.name}"`,...qties,total].join(','));
   });
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['﻿'+rows.join('
-')],{type:'text/csv;charset=utf-8'}));
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+rows.join('\n')],{type:'text/csv;charset=utf-8'}));
   a.download=`歷史訂單_${week}.csv`; a.click();
   showToast('CSV 已匯出','green');
 }
