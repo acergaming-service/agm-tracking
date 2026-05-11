@@ -560,6 +560,74 @@ async function addProduct(){
 }
 
 
+
+// ── 編輯品項 Modal ────────────────────────────────────────────────────────
+let _editVendor='', _editPid='';
+
+function openEditModal(vendor, pid){
+  _editVendor=vendor; _editPid=pid;
+  let p=(products[vendor]||{})[pid];
+  if(!p){
+    for(const [v,ps] of Object.entries(products)){
+      if(ps[pid]){p=ps[pid];_editVendor=v;break;}
+    }
+  }
+  if(!p){showToast('找不到品項');return;}
+  const pm=pmData[pid]||{};
+  document.getElementById('ep-name').value=p.name||'';
+  document.getElementById('ep-vendor').value=vendor;
+  document.getElementById('ep-platform').value=p.platform||'NS';
+  document.getElementById('ep-category').value=p.category||'軟體';
+  document.getElementById('ep-pn').value=p.pn&&p.pn!=='—'?p.pn:'';
+  document.getElementById('ep-barcode').value=p.barcode||'';
+  document.getElementById('ep-spec').value=p.spec||'';
+  document.getElementById('ep-srp').value=p.srp||0;
+  document.getElementById('ep-price').value=p.price||0;
+  document.getElementById('ep-price-special').value=p.priceSpecial||0;
+  document.getElementById('ep-moq').value=p.moq||0;
+  document.getElementById('ep-max').value=p.maxOrder||'';
+  document.getElementById('ep-alloc').value=String(p.isAllocation||false);
+  document.getElementById('ep-price-tag').value=pm.priceTag||p.priceTag||'';
+  document.getElementById('ep-gift').value=pm.giftItem||p.giftItem||'';
+  document.getElementById('ep-display-note').value=pm.displayNote||p.displayNote||'';
+  document.getElementById('edit-modal').style.display='flex';
+}
+
+function closeEditModal(){
+  document.getElementById('edit-modal').style.display='none';
+}
+
+async function saveEditModal(){
+  const vendor=_editVendor, pid=_editPid;
+  if(!vendor||!pid) return;
+  const updates={
+    name:document.getElementById('ep-name').value.trim(),
+    platform:document.getElementById('ep-platform').value,
+    category:document.getElementById('ep-category').value,
+    pn:document.getElementById('ep-pn').value.trim()||'—',
+    barcode:document.getElementById('ep-barcode').value.trim(),
+    spec:document.getElementById('ep-spec').value.trim(),
+    srp:parseInt(document.getElementById('ep-srp').value)||0,
+    price:parseInt(document.getElementById('ep-price').value)||0,
+    priceSpecial:parseInt(document.getElementById('ep-price-special').value)||0,
+    moq:parseInt(document.getElementById('ep-moq').value)||0,
+    maxOrder:document.getElementById('ep-max').value&&parseInt(document.getElementById('ep-max').value)>0?parseInt(document.getElementById('ep-max').value):0,
+    isAllocation:document.getElementById('ep-alloc').value==='true',
+    priceTag:document.getElementById('ep-price-tag').value,
+    giftItem:document.getElementById('ep-gift').value.trim(),
+    displayNote:document.getElementById('ep-display-note').value.trim(),
+  };
+  if(!updates.name){alert('品名不能為空');return;}
+  await fbDB.ref(`products/${vendor}/${pid}`).update(updates);
+  await fbDB.ref(`pmData/${pid}`).update({
+    priceTag:updates.priceTag,
+    giftItem:updates.giftItem,
+    displayNote:updates.displayNote,
+  });
+  if(products[vendor]&&products[vendor][pid]) Object.assign(products[vendor][pid],updates);
+  closeEditModal(); renderProducts(); showToast('品項已更新');
+}
+
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),2500);}
 </script>
 </body>
