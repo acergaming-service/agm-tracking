@@ -557,8 +557,9 @@ function renderMainTable(rows){
     const arrival=pm.arrival||p.arrival||'';
     const reorderArrival=pm.reorderArrival||'';
     const reorderQty=pm.reorderQty||0;
-    const hasPills=Object.entries(dealerQtys)
-      .map(([did,qty])=>`<span class="dp has-order">${dealers[did]?.name||did} ×${qty}</span>`).join('');
+    const orderedDealers=Object.entries(dealerQtys);
+    const showPills=orderedDealers.slice(0,5).map(([did,qty])=>`<span class="dp has-order">${dealers[did]?.name||did} ×${qty}</span>`).join('');
+    const morePills=orderedDealers.length>5?`<span style="font-size:0.78rem;color:var(--accent);cursor:pointer;font-weight:600" onclick="event.stopPropagation();toggleExpand('${p.id}')">+${orderedDealers.length-5} 更多▾</span>`:'';
     const noneCount=allDealerIds.filter(did=>!dealerQtys[did]).length;
     const moqWarn=p.moq>0&&total>0&&total<p.moq;
     const rowId='row-'+p.id;
@@ -572,7 +573,8 @@ function renderMainTable(rows){
       :'尚未填入庫存或追加量';
     const expandRow=`<tr id="expand-${p.id}" style="display:none;background:var(--surface2)">
       <td colspan="9" style="padding:14px 20px 14px 56px;border-bottom:2px solid var(--border)">
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;font-size:0.88rem">
+        <!-- 供貨資訊 -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;font-size:0.88rem;margin-bottom:16px">
           <div>
             <div style="font-size:0.72rem;font-weight:700;color:var(--text3);letter-spacing:0.05em;margin-bottom:6px">現有庫存</div>
             <div style="font-family:var(--mono);font-weight:700;font-size:1.2rem;color:${stock>0?'var(--green)':'var(--text3)'}">${stock||'0'}</div>
@@ -594,6 +596,19 @@ function renderMainTable(rows){
             <div style="font-size:0.72rem;color:var(--text3);margin-top:2px">${gapFormula}</div>
           </div>
         </div>
+        <!-- 通路明細 -->
+        <div style="border-top:1px solid var(--border);padding-top:12px">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--text3);letter-spacing:0.05em;margin-bottom:8px">通路訂單明細（共 ${orderedDealers.length} 個通路有填單）</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            ${allDealerIds.map(did=>{
+              const qty=dealerQtys[did]||0;
+              const name=dealers[did]?.name||did;
+              const sales=dealers[did]?.sales||'';
+              if(!qty) return `<span style="font-size:0.8rem;color:var(--text3);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 10px">${name} —</span>`;
+              return `<span style="font-size:0.8rem;font-weight:700;color:var(--green);background:var(--green-dim);border:1px solid var(--green-b);border-radius:6px;padding:3px 10px">${name} ×${qty}</span>`;
+            }).join('')}
+          </div>
+        </div>
       </td>
     </tr>`;
 
@@ -610,7 +625,7 @@ function renderMainTable(rows){
         ${STATUS_LABEL[pStatus]||'—'}
       </td>
       <td style="font-size:0.85rem;color:var(--amber);font-weight:600">${arrival||'—'}</td>
-      <td style="line-height:1.8">${hasPills}${noneCount>0?`<span style="font-size:0.72rem;color:var(--text3)">（另${noneCount}未填）</span>`:''}</td>
+      <td style="line-height:1.8">${showPills}${morePills}${!morePills&&noneCount>0?`<span style="font-size:0.72rem;color:var(--text3)">（另${noneCount}未填）</span>`:''}</td>
       <td style="text-align:center;color:var(--text3);font-size:0.8rem" id="arrow-${p.id}">▶</td>
     </tr>${expandRow}`;
   }).join('');
