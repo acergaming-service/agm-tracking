@@ -461,6 +461,7 @@ window.addEventListener('DOMContentLoaded', async()=>{
 function switchTab(tab, el){
   document.querySelectorAll('.ltab').forEach(t=>t.classList.remove('active')); el.classList.add('active');
   ['main','catalog','links','window'].forEach(t=>{document.getElementById('panel-'+t).classList.toggle('hidden',t!==tab);});
+  if(tab==='catalog') renderCatalog();
   if(tab==='links') renderLogLinks();
   if(tab==='window') renderWindowForm();
 }
