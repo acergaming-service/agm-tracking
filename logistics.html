@@ -907,26 +907,30 @@ async function confirmArchive(){
 function renderCatalog(){
   const vendor=document.getElementById('cat-vendor')?.value||'';
   const platform=document.getElementById('cat-platform')?.value||'';
-  const status=document.getElementById('cat-status')?.value||'';
+  const statusFilter=document.getElementById('cat-status')?.value||'';
   const search=(document.getElementById('cat-search')?.value||'').toLowerCase();
 
-  // 若 products 還沒載入，延遲重試
-  const totalProds=Object.values(products).reduce((s,ps)=>s+Object.keys(ps||{}).length,0);
-  if(totalProds===0){
+  // 直接從 Firebase 重新讀取 products
+  if(!products||Object.keys(products).length===0){
     document.getElementById('cat-count').textContent='載入中…';
-    document.getElementById('cat-tbody').innerHTML='<tr><td colspan="12" style="padding:2rem;text-align:center;color:var(--text3)">載入中，請稍候…</td></tr>';
-    setTimeout(renderCatalog, 800);
+    document.getElementById('cat-tbody').innerHTML='<tr><td colspan="12" style="padding:2rem;text-align:center;color:var(--text3)">載入中…</td></tr>';
+    fbDB.ref('products').once('value').then(snap=>{
+      products=snap.val()||{};
+      renderCatalog();
+    });
     return;
   }
 
   let rows=[];
   Object.entries(products).forEach(([v,prods])=>{
+    if(!prods||typeof prods!=='object') return;
     if(vendor&&v!==vendor) return;
     Object.values(prods).forEach(p=>{
+      if(!p||!p.name) return;
       const pm=pmDataCache[p.id]||{};
       const pStatus=(pm.status!==undefined?pm.status:p.status)||'';
       if(platform&&p.platform!==platform) return;
-      if(status&&pStatus!==status) return;
+      if(statusFilter&&pStatus!==statusFilter) return;
       if(search&&!p.name.toLowerCase().includes(search)&&!(p.barcode||'').includes(search)) return;
       const total=Object.values(orders).reduce((s,dO)=>s+((dO||{})[p.id]?.qty||0),0);
       rows.push({vendor:v,p,pm,total,pStatus});
