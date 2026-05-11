@@ -562,7 +562,7 @@ function renderMainTable(rows){
     const ordered=parseInt(pm.vendorOrdered)||0;
     const supply=stock+ordered;
     const supplyGap=supply>0?total-supply:null;
-    const STATUS_LABEL={instock:'🟢 現貨',preorder:'🔵 追加中',clearance:'🟡 出清',unavailable:'🔴 停止供應','':'—'};
+    const STATUS_LABEL={instock:'現貨',preorder:'追加中',clearance:'出清',unavailable:'停止供應','':'—'};
     const STATUS_COLOR={instock:'var(--green)',preorder:'var(--accent)',clearance:'var(--amber)',unavailable:'var(--red)','':'var(--text3)'};
     const pStatus=(pm.status!==undefined?pm.status:p.status)||'';
     const arrival=pm.arrival||p.arrival||'';
