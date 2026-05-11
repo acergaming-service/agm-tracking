@@ -501,6 +501,13 @@ tr:hover td{background:var(--surface2)}
         </div>
       </div>
       <!-- 危險操作 -->
+      <div class="add-form" style="border-color:var(--green-b);background:var(--green-dim)">
+        <h3 style="color:var(--green)">📋 通路管理</h3>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:0.5rem">
+          <button class="btn-success" onclick="addMissingDealers()">＋ 補齊缺少的通路（17個）</button>
+          <div style="font-size:0.82rem;color:var(--text2)">WEILINK、燦坤、家樂福、法雅客、全國、昇恆昌、宇頡、墊腳石、梓萌、U李、超威、彭氏、峰鼎、小王子、AGM EC、其他、展碁</div>
+        </div>
+      </div>
       <div class="add-form" style="border-color:var(--red-b);background:var(--red-dim)">
         <h3 style="color:var(--red)">⚠ 危險操作</h3>
         <div style="display:flex;flex-direction:column;gap:10px;margin-top:0.5rem">
@@ -1342,6 +1349,34 @@ function exportHistoryCSV(){
   a.href=URL.createObjectURL(new Blob(['\uFEFF'+rows.join('\n')],{type:'text/csv;charset=utf-8'}));
   a.download=`歷史訂單_${week}.csv`; a.click();
   showToast('CSV 已匯出','green');
+}
+
+async function addMissingDealers(){
+  const missing={
+    weilink:{name:'WEILINK',sales:'Hsinhui',code:'WL'},
+    tsandkun:{name:'燦坤',sales:'Wythe',code:'CK'},
+    carrefour:{name:'家樂福',sales:'Wythe',code:'CF'},
+    fayake:{name:'法雅客',sales:'Tom',code:'FY'},
+    quanguo:{name:'全國',sales:'Tom',code:'QG'},
+    shengheng:{name:'昇恆昌',sales:'AKI',code:'SH'},
+    yuji:{name:'宇頡',sales:'Hsinhui',code:'YJ'},
+    djiaostone:{name:'墊腳石',sales:'Wythe',code:'DS'},
+    ziming:{name:'梓萌',sales:'AKI',code:'ZM'},
+    uli:{name:'U李',sales:'AKI',code:'UL'},
+    chaowei:{name:'超威',sales:'AKI',code:'CW'},
+    pengshi:{name:'彭氏',sales:'Hsinhui',code:'PS'},
+    fengding:{name:'峰鼎',sales:'Hsinhui',code:'FD'},
+    xiaowangzi:{name:'小王子',sales:'AKI',code:'XW'},
+    agmec:{name:'AGM EC',sales:'Meg',code:'AE'},
+    qita:{name:'其他',sales:'Meg',code:'QT'},
+    zhanbao:{name:'展碁',sales:'Tom',code:'ZB'},
+  };
+  const updates={};
+  Object.entries(missing).forEach(([id,d])=>{ updates[`dealers/${id}`]=d; });
+  await fbDB.ref().update(updates);
+  Object.assign(dealers, missing);
+  renderDealers(); populateReportFilters();
+  showToast(`✅ 已新增 ${Object.keys(missing).length} 個通路`,'green');
 }
 
 function showToast(msg,type='green'){
