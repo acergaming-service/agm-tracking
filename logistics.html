@@ -223,14 +223,12 @@ tr:hover td{background:var(--surface2)}
         <th style="width:50px">代理</th>
         <th style="width:58px">平台</th>
         <th>品名</th>
-        <th style="width:55px;text-align:right">MOQ</th>
-        <th style="width:75px;text-align:right">已登記</th>
-        <th style="width:75px;text-align:right">現庫存</th>
-        <th style="width:80px;text-align:right">本週追加</th>
-        <th style="width:80px;text-align:right">可供應</th>
-        <th style="width:80px;text-align:center">缺口</th>
-        <th style="width:160px">追加批次</th>
+        <th style="width:58px;text-align:right">MOQ</th>
+        <th style="width:72px;text-align:right">已登記</th>
+        <th style="width:120px">狀態</th>
+        <th style="width:130px">到貨日</th>
         <th>已填通路</th>
+        <th style="width:30px"></th>
       </tr></thead><tbody id="main-tbody"></tbody></table>
     </div>
 
@@ -278,7 +276,8 @@ tr:hover td{background:var(--surface2)}
       <select class="filter-select" id="cat-status" onchange="renderCatalog()">
         <option value="">全部狀態</option>
         <option value="instock">現貨</option>
-        <option value="preorder">預購中</option>
+        <option value="preorder">追加中</option>
+        <option value="clearance">出清</option>
         <option value="unavailable">停止供應</option>
       </select>
       <input class="search-box" id="cat-search" placeholder="🔍 搜尋品名或條碼…" oninput="renderCatalog()" style="width:220px">
@@ -552,45 +551,68 @@ function renderMainTable(rows){
     const ordered=parseInt(pm.vendorOrdered)||0;
     const supply=stock+ordered;
     const supplyGap=supply>0?total-supply:null;
-    const gapLabel=supplyGap===null?'—':supplyGap>0?`<span class="gap-badge gap-need">超量 +${supplyGap}</span>`:supplyGap<0?`<span class="gap-badge gap-ok">餘量 ${-supplyGap}</span>`:`<span class="gap-badge gap-empty">剛好</span>`;
-    const gapBadge={
-      zero:`<span class="gap-badge gap-empty">無訂單</span>`,
-      below:`<span class="gap-badge gap-need">缺 ${(p.moq||0)-total}</span>`,
-      ok:`<span class="gap-badge gap-ok">達標</span>`,
-      over:`<span class="gap-badge gap-over">超限</span>`
-    }[moqStatus]||'';
+    const STATUS_LABEL={instock:'🟢 現貨',preorder:'🔵 追加中',clearance:'🟡 出清',unavailable:'🔴 停止供應','':'—'};
+    const STATUS_COLOR={instock:'var(--green)',preorder:'var(--accent)',clearance:'var(--amber)',unavailable:'var(--red)','':'var(--text3)'};
+    const pStatus=(pm.status!==undefined?pm.status:p.status)||'';
+    const arrival=pm.arrival||p.arrival||'';
+    const reorderArrival=pm.reorderArrival||'';
+    const reorderQty=pm.reorderQty||0;
     const hasPills=Object.entries(dealerQtys)
       .map(([did,qty])=>`<span class="dp has-order">${dealers[did]?.name||did} ×${qty}</span>`).join('');
     const noneCount=allDealerIds.filter(did=>!dealerQtys[did]).length;
-    return `<tr>
+    const moqWarn=p.moq>0&&total>0&&total<p.moq;
+    const rowId='row-'+p.id;
+
+    // 展開列（供貨記錄）
+    const gap=supply>0?total-supply:null;
+    const gapColor=gap===null?'var(--text3)':gap>0?'var(--red)':gap<0?'var(--green)':'var(--amber)';
+    const gapText=gap===null?'—':gap>0?'+'+gap+' 超量':gap<0?gap+' 尚有餘量':'0 剛好足夠';
+    const gapFormula=supply>0
+      ?`已登記 ${total} − （庫存 ${stock} ＋ 追加 ${ordered}） ＝ ${gap}`
+      :'尚未填入庫存或追加量';
+    const expandRow=`<tr id="expand-${p.id}" style="display:none;background:var(--surface2)">
+      <td colspan="9" style="padding:14px 20px 14px 56px;border-bottom:2px solid var(--border)">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;font-size:0.88rem">
+          <div>
+            <div style="font-size:0.72rem;font-weight:700;color:var(--text3);letter-spacing:0.05em;margin-bottom:6px">現有庫存</div>
+            <div style="font-family:var(--mono);font-weight:700;font-size:1.2rem;color:${stock>0?'var(--green)':'var(--text3)'}">${stock||'0'}</div>
+            <div style="font-size:0.72rem;color:var(--text3);margin-top:2px">PM 填入</div>
+          </div>
+          <div>
+            <div style="font-size:0.72rem;font-weight:700;color:var(--text3);letter-spacing:0.05em;margin-bottom:6px">向原廠追加量</div>
+            <div style="font-family:var(--mono);font-weight:700;font-size:1.2rem;color:${ordered>0?'var(--accent)':'var(--text3)'}">${ordered||'—'}</div>
+            <div style="font-size:0.72rem;color:var(--text3);margin-top:2px">PM 填入</div>
+          </div>
+          <div>
+            <div style="font-size:0.72rem;font-weight:700;color:var(--text3);letter-spacing:0.05em;margin-bottom:6px">追加到貨日</div>
+            <div style="font-weight:600;font-size:1rem;color:${reorderArrival?'var(--amber)':'var(--text3)'}">${reorderArrival||'—'}</div>
+            <div style="font-size:0.72rem;color:var(--text3);margin-top:2px">PM 填入</div>
+          </div>
+          <div>
+            <div style="font-size:0.72rem;font-weight:700;color:var(--text3);letter-spacing:0.05em;margin-bottom:6px">缺口</div>
+            <div style="font-family:var(--mono);font-weight:700;font-size:1.2rem;color:${gapColor}">${gapText}</div>
+            <div style="font-size:0.72rem;color:var(--text3);margin-top:2px">${gapFormula}</div>
+          </div>
+        </div>
+      </td>
+    </tr>`;
+
+    return `<tr style="cursor:pointer" onclick="toggleExpand('${p.id}')">
       <td><span class="vendor-dot v${vendor}"></span><strong style="font-size:0.82rem">${vendor==='GS'?'GSE':vendor}</strong></td>
       <td><span class="platform-tag ${p.platform}">${p.platform}</span></td>
       <td>
         <div style="font-weight:600;font-size:0.9rem">${p.name}</div>
         <div style="font-family:var(--mono);font-size:0.72rem;color:var(--text3);margin-top:2px">${p.pn}</div>
       </td>
-      <td style="text-align:right" class="num">${p.moq||0}</td>
-      <td style="text-align:right" class="num ${moqStatus==='below'?'moq-low':moqStatus==='ok'?'moq-ok':moqStatus==='over'?'moq-over':'moq-zero'}">${total}</td>
-      <td style="text-align:right;font-family:var(--mono);font-weight:600;color:${stock>0?'var(--green)':'var(--text3)'}">${stock||'—'}</td>
-      <td style="text-align:right;font-family:var(--mono);font-weight:600;color:${ordered>0?'var(--accent)':'var(--text3)'}">${ordered||'—'}</td>
-      <td style="text-align:right;font-family:var(--mono);font-weight:700;color:${supply>0?'var(--text)':'var(--text3)'}">${supply||'—'}</td>
-      <td style="text-align:center">${gapLabel}</td>
-      <td style="padding:6px 12px">
-        ${(()=>{
-          const reorders=(pm.reorders||[]);
-          if(!reorders.length) return '<span style="font-size:0.8rem;color:var(--text3)">—</span>';
-          return reorders.slice().reverse().map((r,i)=>
-            `<div style="font-size:0.8rem;line-height:1.6;display:flex;gap:6px;align-items:center">
-              <span style="color:var(--text3);font-size:0.72rem">#${reorders.length-i}</span>
-              <span style="font-weight:600;color:var(--amber)">${r.arrival||'—'}</span>
-              ${r.qty?`<span style="color:var(--text3)">×${r.qty}</span>`:''}
-              ${r.note?`<span style="color:var(--text2);font-size:0.75rem">${r.note}</span>`:''}
-            </div>`
-          ).join('');
-        })()}
+      <td style="text-align:right;font-family:var(--mono);color:${moqWarn?'var(--red)':'var(--text3)'};font-weight:${moqWarn?700:400}">${p.moq||'—'}</td>
+      <td style="text-align:right;font-family:var(--mono);font-weight:700;color:${moqWarn?'var(--red)':total>0?'var(--green)':'var(--text3)'}">${total||'—'}${moqWarn?` <span style="font-size:0.72rem">缺${p.moq-total}</span>`:''}</td>
+      <td style="font-size:0.85rem;font-weight:600;color:${STATUS_COLOR[pStatus]||'var(--text3)'}">
+        ${STATUS_LABEL[pStatus]||'—'}
       </td>
-      <td style="line-height:1.8">${hasPills}${noneCount>0?`<span style="font-size:0.72rem;color:var(--text3)">（另 ${noneCount} 通路未填）</span>`:''}</td>
-    </tr>`;
+      <td style="font-size:0.85rem;color:var(--amber);font-weight:600">${arrival||'—'}</td>
+      <td style="line-height:1.8">${hasPills}${noneCount>0?`<span style="font-size:0.72rem;color:var(--text3)">（另${noneCount}未填）</span>`:''}</td>
+      <td style="text-align:center;color:var(--text3);font-size:0.8rem" id="arrow-${p.id}">▶</td>
+    </tr>${expandRow}`;
   }).join('');
 }
 
@@ -925,7 +947,7 @@ function renderCatalog(){
 
   document.getElementById('cat-count').textContent=rows.length+' 項';
 
-  const statusLabel={instock:'現貨',preorder:'預購中',unavailable:'停止供應'};
+  const statusLabel={instock:'現貨',preorder:'追加中',clearance:'出清',unavailable:'停止供應'};
   const statusColor={instock:'var(--green)',incoming:'var(--accent)',limited:'var(--amber)',
     tbc:'var(--amber)',available:'var(--text2)',unavailable:'var(--text3)',
     clearance:'var(--purple)',delayed:'var(--red)',preorder:'var(--accent)'};
@@ -983,6 +1005,15 @@ async function updateStock(pid, vendor, val, el){
   if(!pmDataCache[pid]) pmDataCache[pid]={};
   pmDataCache[pid].stock=val;
   showToast('庫存已更新');
+}
+
+function toggleExpand(pid){
+  const row=document.getElementById('expand-'+pid);
+  const arrow=document.getElementById('arrow-'+pid);
+  if(!row) return;
+  const isOpen=row.style.display!=='none';
+  row.style.display=isOpen?'none':'table-row';
+  if(arrow) arrow.textContent=isOpen?'▶':'▼';
 }
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),2500);}
