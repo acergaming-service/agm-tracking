@@ -602,7 +602,7 @@ function renderMainTable(rows){
             return reorders.slice().reverse().map((r,i)=>{
               const idx=reorders.length-1-i;
               const hasArrival=r.arrival&&r.arrival.trim();
-              return `<div style="display:flex;align-items:center;gap:16px;padding:8px 12px;background:${hasArrival?'var(--green-dim)':'var(--amber-dim)'};border:1px solid ${hasArrival?'var(--green-b)':'var(--amber-b)'};border-radius:8px;margin-bottom:6px">
+              return `<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:${hasArrival?'var(--green-dim)':'var(--amber-dim)'};border:1px solid ${hasArrival?'var(--green-b)':'var(--amber-b)'};border-radius:8px;margin-bottom:6px">
                 <div style="font-size:0.75rem;font-weight:700;color:var(--text3);min-width:24px">第${idx+1}次</div>
                 <div style="font-size:0.75rem;color:var(--text3)">${r.createdAt||''}</div>
                 <div style="font-family:var(--mono);font-weight:700;color:var(--accent)">追加 ${r.qty||0} 件</div>
@@ -610,6 +610,12 @@ function renderMainTable(rows){
                   ${hasArrival
                     ?`<span style="font-size:0.82rem;font-weight:700;color:var(--green)">到貨：${r.arrival}</span>`
                     :`<span style="font-size:0.82rem;color:var(--amber)">⏳ 待PM填入到貨日</span>`}
+                </div>
+                <div style="display:flex;gap:4px;margin-left:8px">
+                  <button onclick="event.stopPropagation();editReorder('${p.id}','${p.name}',${idx},${r.qty})"
+                    style="background:var(--accent-dim);border:1px solid #bfcffe;color:var(--accent);border-radius:5px;padding:3px 8px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:var(--font)">修改</button>
+                  <button onclick="event.stopPropagation();deleteReorder('${p.id}','${p.name}',${idx})"
+                    style="background:var(--red-dim);border:1px solid var(--red-b);color:var(--red);border-radius:5px;padding:3px 8px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:var(--font)">刪除</button>
                 </div>
               </div>`;
             }).join('');
@@ -1062,17 +1068,51 @@ function closeReorderModal(){ document.getElementById('reorder-modal').style.dis
 async function confirmAddReorder(){
   const qty=parseInt(document.getElementById('reorder-qty').value)||0;
   if(!qty||qty<1){alert('請填入追加數量');return;}
-  const today=new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\//g,'/');
+  const today=new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit'});
   if(!pmDataCache[_reorderPid]) pmDataCache[_reorderPid]={};
   const reorders=pmDataCache[_reorderPid].reorders||[];
   reorders.push({qty,createdAt:today,createdBy:'logistics',arrival:''});
-  await fbDB.ref(`pmData/${_reorderPid}/reorders`).set(reorders);
+  // 樂觀更新：先更新本地再存 Firebase
   pmDataCache[_reorderPid].reorders=reorders;
   closeReorderModal();
-  // 重新渲染展開列
-  const expandRow=document.getElementById('expand-'+_reorderPid);
-  if(expandRow) toggleExpand(_reorderPid); toggleExpand(_reorderPid);
+  refreshExpandRow(_reorderPid);
   showToast('✅ 追加記錄已新增，待 PM 回填到貨日');
+  fbDB.ref(`pmData/${_reorderPid}/reorders`).set(reorders).catch(()=>showToast('儲存失敗，請重試'));
+}
+
+// 修改追加記錄
+let _editReorderPid='', _editReorderName='', _editReorderIdx=-1;
+function editReorder(pid, name, idx, currentQty){
+  _editReorderPid=pid; _editReorderName=name; _editReorderIdx=idx;
+  const newQty=prompt(`修改「${name}」第${idx+1}次追加數量（目前：${currentQty}）：`, currentQty);
+  if(newQty===null) return;
+  const qty=parseInt(newQty)||0;
+  if(!qty||qty<1){alert('數量需大於0');return;}
+  const reorders=pmDataCache[pid]?.reorders||[];
+  reorders[idx].qty=qty;
+  pmDataCache[pid].reorders=reorders;
+  refreshExpandRow(pid);
+  showToast('已修改');
+  fbDB.ref(`pmData/${pid}/reorders`).set(reorders).catch(()=>showToast('儲存失敗，請重試'));
+}
+
+// 刪除追加記錄
+function deleteReorder(pid, name, idx){
+  if(!confirm(`確定刪除「${name}」第${idx+1}次追加記錄？`)) return;
+  const reorders=pmDataCache[pid]?.reorders||[];
+  reorders.splice(idx,1);
+  pmDataCache[pid].reorders=reorders;
+  refreshExpandRow(pid);
+  showToast('已刪除');
+  fbDB.ref(`pmData/${pid}/reorders`).set(reorders.length?reorders:null).catch(()=>showToast('儲存失敗，請重試'));
+}
+
+// 重新渲染展開列（不關閉）
+function refreshExpandRow(pid){
+  const expandRow=document.getElementById('expand-'+pid);
+  if(!expandRow||expandRow.style.display==='none') return;
+  // 強制重新渲染：關閉再開
+  toggleExpand(pid); toggleExpand(pid);
 }
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),2500);}
