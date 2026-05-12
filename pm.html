@@ -171,11 +171,13 @@ tr:hover td{background:var(--surface2)}
       <table><thead><tr>
         <th style="width:50px">代理</th><th style="width:58px">平台</th><th style="width:70px">類型</th>
         <th>品名 / AGBS P/N / 國際條碼</th>
-        <th style="width:68px;text-align:right">MOQ</th>
-        <th style="width:120px">貨物狀態</th>
-        <th style="width:140px">到貨日 / 發售日</th>
-        <th style="width:120px">促銷標籤</th>
-        <th style="width:160px">備註</th>
+        <th style="width:58px;text-align:right">MOQ</th>
+        <th style="width:85px;text-align:right">SRP(含稅)</th>
+        <th style="width:85px;text-align:right">出貨價(含稅)</th>
+        <th style="width:85px;text-align:right">出貨價(未稅)</th>
+        <th style="width:110px">貨物狀態</th>
+        <th style="width:130px">到貨日 / 發售日</th>
+        <th style="width:110px">促銷標籤</th>
         <th style="width:45px;text-align:center">編輯</th>
       </tr></thead><tbody id="prod-tbody"></tbody></table>
     </div>
@@ -394,6 +396,18 @@ function renderProducts(){
       <td style="text-align:right">
         <input class="inline-num" type="number" min="0" value="${p.moq||0}"
           onchange="updateProd('${p.vendor}','${p.id}','moq',parseInt(this.value)||0)">
+      </td>
+      <td style="text-align:right">
+        <input class="inline-num" style="width:82px" type="number" min="0" value="${p.srp||0}"
+          onchange="updateProd('${p.vendor}','${p.id}','srp',parseInt(this.value)||0)">
+      </td>
+      <td style="text-align:right">
+        <input class="inline-num" style="width:82px" type="number" min="0" value="${p.priceTax||0}"
+          onchange="updateProd('${p.vendor}','${p.id}','priceTax',parseInt(this.value)||0)">
+      </td>
+      <td style="text-align:right">
+        <input class="inline-num" style="width:82px" type="number" min="0" value="${p.price||0}"
+          onchange="updateProd('${p.vendor}','${p.id}','price',parseInt(this.value)||0)">
       </td>
       <td>
         <select class="inline-select ${sCls}" onchange="updateProdAndPM('${p.vendor}','${p.id}','status',this.value)">
