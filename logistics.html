@@ -202,7 +202,6 @@ tr:hover td{background:var(--surface2)}
       </select>
       <select class="filter-select" id="filter-moq" onchange="applyFilter()">
         <option value="">全部狀態</option>
-        <option value="ok">✅ MOQ 達標</option>
         <option value="over">🔴 超過上限</option>
         <option value="zero">— 無訂單</option>
       </select>
@@ -292,9 +291,7 @@ tr:hover td{background:var(--surface2)}
         <th>品名</th>
         <th style="width:62px;text-align:right">MOQ</th>
         <th style="width:75px;text-align:right">已登記</th>
-        <th style="width:85px;text-align:center">MOQ狀態</th>
         <th style="width:120px">到貨日</th>
-        <th style="width:130px">追加批次</th>
         <th style="width:115px">貨物狀態</th>
         <th style="width:80px;text-align:right">現庫存</th>
         <th style="width:85px;text-align:right">本週追加</th>
@@ -941,16 +938,9 @@ function renderCatalog(){
     const ordered=parseInt(pm.vendorOrdered)||0;
     const reorders=pm.reorders||[];
     const moq=p.moq||0;
-    let moqBadge='<span style="color:var(--text3);font-size:0.8rem">—</span>';
-    if(total>0&&total<moq) moqBadge=`<span style="color:var(--red);font-weight:700;font-size:0.8rem">缺 ${moq-total}</span>`;
-    else if(total>=moq&&total>0) moqBadge=`<span style="color:var(--green);font-weight:700;font-size:0.8rem">✅ 達標</span>`;
-    else if(total===0&&moq>0) moqBadge=`<span style="color:var(--text3);font-size:0.8rem">未收單</span>`;
 
-    // 追加批次
-    const reorderHtml=reorders.length
-      ? reorders.slice(-2).map((r,i)=>`<div style="font-size:0.78rem;color:var(--amber);font-weight:600">${r.arrival} ${r.qty?'×'+r.qty:''}</div>`).join('')
-        +(reorders.length>2?`<div style="font-size:0.72rem;color:var(--text3)">共 ${reorders.length} 批次</div>`:'')
-      : '<span style="color:var(--text3);font-size:0.78rem">—</span>';
+
+
 
     return `<tr>
       <td style="font-size:0.78rem;font-weight:700;color:var(--text2)">${vendor==='GS'?'GSE':vendor}</td>
@@ -962,9 +952,8 @@ function renderCatalog(){
       </td>
       <td style="text-align:right;font-family:var(--mono)">${moq||'—'}</td>
       <td style="text-align:right;font-family:var(--mono);font-weight:700;color:${total>0?'var(--text)':'var(--text3)'}">${total||'—'}</td>
-      <td style="text-align:center">${moqBadge}</td>
       <td style="font-size:0.85rem;font-weight:600;color:var(--amber)">${arrival||'—'}</td>
-      <td>${reorderHtml}</td>
+
       <td style="font-size:0.82rem;color:${statusColor[pStatus]||'var(--text3)'}">
         ${statusLabel[pStatus]||pStatus||'—'}
       </td>

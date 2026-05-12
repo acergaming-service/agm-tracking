@@ -167,7 +167,7 @@ tr:hover td{background:var(--surface2)}
     </div>
 
     <div class="tbl-wrap">
-      <div class="tbl-header"><span class="tbl-title">所有品項清單</span><span style="font-size:0.82rem;color:var(--text2);margin-left:auto">修改後自動儲存</span></div>
+      <div class="tbl-header"><span class="tbl-title">所有品項清單</span></div>
       <table><thead><tr>
         <th style="width:50px">代理</th><th style="width:58px">平台</th><th style="width:70px">類型</th>
         <th>品名 / AGBS P/N / 國際條碼</th>
@@ -400,7 +400,7 @@ function renderProducts(){
       <td><span style="font-size:0.85rem;font-weight:600;color:${STATUS_MAP[status]?.cls==='s-instock'?'var(--green)':STATUS_MAP[status]?.cls==='s-preorder'?'var(--accent)':STATUS_MAP[status]?.cls==='s-clearance'?'var(--amber)':STATUS_MAP[status]?.cls==='s-unavailable'?'var(--red)':'var(--text3)'}">${STATUS_MAP[status]?.l||'—'}</span></td>
       <td style="font-size:0.88rem;color:${arrival?'var(--amber)':'var(--text3)'};font-weight:${arrival?600:400}">${arrival||'—'}</td>
       <td style="font-size:0.85rem;color:${priceTag?'var(--red)':'var(--text3)'}">${priceTag||'—'}</td>
-      <td style="font-size:0.85rem;color:var(--text2);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${displayNote||'—'}</td>
+      <td style="font-size:0.85rem;color:var(--text2);max-width:160px">${displayNote||'—'}</td>
       <td style="text-align:center">
         <button style="background:var(--accent-dim);border:1px solid #bfcffe;color:var(--accent);border-radius:6px;padding:4px 10px;font-family:var(--font);font-size:0.82rem;font-weight:700;cursor:pointer"
           onclick="openEditModal('${p.vendor}','${p.id}')">✏️</button>
