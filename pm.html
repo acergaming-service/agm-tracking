@@ -145,10 +145,11 @@ tr:hover td{background:var(--surface2)}
         <div class="fg"><label>到貨日 / 發售日</label><input id="np-arrival" placeholder="2025/7/24 或 5月下旬到貨"></div>
         <div class="fg"><label>貨物狀態</label>
           <select id="np-status">
-            <option value="">— 未設定</option><option value="instock">現庫可出</option>
-            <option value="incoming">即將到貨</option><option value="limited">限量出完為止</option>
-            <option value="tbc">確認供貨中</option><option value="available">可追貨</option>
-            <option value="unavailable">無法供應</option><option value="clearance">專案出清</option>
+            <option value="">— 未設定</option>
+            <option value="instock">現貨</option>
+            <option value="preorder">追加中</option>
+            <option value="clearance">出清</option>
+            <option value="unavailable">停止供應</option>
           </select></div>
         <div class="fg"><label>分配出貨</label>
           <select id="np-alloc"><option value="false">否</option><option value="true">是（分配出貨）</option></select></div>
@@ -292,16 +293,18 @@ tr:hover td{background:var(--surface2)}
 const FIREBASE_CONFIG={apiKey:"AIzaSyA-eDT7V7asiQ5ebGca-wBif8P-uW89_iQ",authDomain:"agm-tracking.firebaseapp.com",databaseURL:"https://agm-tracking-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"agm-tracking",storageBucket:"agm-tracking.firebasestorage.app",messagingSenderId:"91450833150",appId:"1:91450833150:web:79e5b01783be48ebff4daf"};
 
 const STATUS_OPTS=[
-  {v:'',          l:'— 未設定',  cls:'s-empty'},
-  {v:'instock',   l:'現貨',      cls:'s-instock'},
-  {v:'preorder',  l:'預購中',    cls:'s-preorder'},
+  {v:'',           l:'— 未設定',  cls:'s-empty'},
+  {v:'instock',    l:'現貨',      cls:'s-instock'},
+  {v:'preorder',   l:'追加中',    cls:'s-preorder'},
+  {v:'clearance',  l:'出清',      cls:'s-clearance'},
   {v:'unavailable',l:'停止供應', cls:'s-unavailable'},
 ];
 const STATUS_MAP={
-  '':           {l:'— 未設定',  cls:'s-empty',       canOrder:true},
-  'instock':    {l:'現貨',      cls:'s-instock',     canOrder:true},
-  'preorder':   {l:'預購中',    cls:'s-preorder',    canOrder:true},
-  'unavailable':{l:'停止供應',  cls:'s-unavailable', canOrder:false},
+  '':            {l:'— 未設定',  cls:'s-empty',       canOrder:true},
+  'instock':     {l:'現貨',      cls:'s-instock',     canOrder:true},
+  'preorder':    {l:'追加中',    cls:'s-preorder',    canOrder:true},
+  'clearance':   {l:'出清',      cls:'s-clearance',   canOrder:true},
+  'unavailable': {l:'停止供應',  cls:'s-unavailable', canOrder:false},
 };
 
 const PRICE_TAG_OPTS=['','特價','庫存出清','買1送1','附贈品','4月優惠','價格調整','免費升級PS5'];
