@@ -186,7 +186,7 @@ tr:hover td{background:var(--surface2)}
   <!-- ══ 追加下單 ══ -->
   <div id="tab-reorder" class="hidden">
     <div class="step-guide">
-      <strong>② 後勤通知需要追加時</strong>：後勤會告知每個品項的追加數量，PM 向原廠下單後，在「追加到貨日」欄填入預計到貨時間即可。
+      <strong>後勤新增追加記錄後</strong>，品項會出現在這裡。PM 向原廠下單後，在時間軸上填入各次追加的到貨日即可。
     </div>
     <div class="filter-bar">
       <select class="filter-select" id="ro-vendor" onchange="renderReorder()"><option value="">全部代理商</option><option value="BNE">BNE</option><option value="GS">GSE</option><option value="SONY">SONY</option></select>
@@ -199,14 +199,12 @@ tr:hover td{background:var(--surface2)}
         <span style="font-size:0.85rem;color:var(--text2);margin-left:auto">後勤填入追加量 → PM 新增追加批次</span>
       </div>
       <table><thead><tr>
-        <th style="width:50px">代理</th><th style="width:58px">平台</th>
-        <th>品名</th>
-        <th style="width:80px;text-align:right">已登記量</th>
-        <th style="width:90px;text-align:right">後勤追加量</th>
-        <th style="width:140px">追加到貨日（PM填）</th>
-        <th style="width:80px;text-align:right">追加數量</th>
-        <th style="width:120px">貨物狀態</th>
-        <th style="width:80px;text-align:center">操作</th>
+        <th style="width:50px">代理</th>
+        <th style="width:58px">平台</th>
+        <th style="width:200px">品名</th>
+        <th style="width:110px">貨物狀態</th>
+        <th>追加記錄（後勤填量 → PM填到貨日）</th>
+        <th style="width:100px;text-align:center">狀態</th>
       </tr></thead><tbody id="ro-tbody"></tbody></table>
     </div>
   </div>
