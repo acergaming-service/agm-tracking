@@ -393,40 +393,14 @@ function renderProducts(){
           ${p.pn&&p.pn!=='—'?p.pn:''}${p.barcode?' · 國條:'+p.barcode:''}
         </div>
       </td>
-      <td style="text-align:right">
-        <input class="inline-num" type="number" min="0" value="${p.moq||0}"
-          onchange="updateProd('${p.vendor}','${p.id}','moq',parseInt(this.value)||0)">
-      </td>
-      <td style="text-align:right">
-        <input class="inline-num" style="width:82px" type="number" min="0" value="${p.srp||0}"
-          onchange="updateProd('${p.vendor}','${p.id}','srp',parseInt(this.value)||0)">
-      </td>
-      <td style="text-align:right">
-        <input class="inline-num" style="width:82px" type="number" min="0" value="${p.priceTax||0}"
-          onchange="updateProd('${p.vendor}','${p.id}','priceTax',parseInt(this.value)||0)">
-      </td>
-      <td style="text-align:right">
-        <input class="inline-num" style="width:82px" type="number" min="0" value="${p.price||0}"
-          onchange="updateProd('${p.vendor}','${p.id}','price',parseInt(this.value)||0)">
-      </td>
-      <td>
-        <select class="inline-select ${sCls}" onchange="updateProdAndPM('${p.vendor}','${p.id}','status',this.value)">
-          ${STATUS_OPTS.map(o=>`<option value="${o.v}" ${status===o.v?'selected':''}>${o.l}</option>`).join('')}
-        </select>
-      </td>
-      <td>
-        <input class="inline-text ${arrival?'filled':''}" type="text" value="${arrival}" placeholder="到貨日"
-          onchange="updateProdAndPM('${p.vendor}','${p.id}','arrival',this.value)">
-      </td>
-      <td>
-        <select class="inline-select" onchange="updateProdAndPM('${p.vendor}','${p.id}','priceTag',this.value)">
-          ${PRICE_TAG_OPTS.map(t=>`<option value="${t}" ${priceTag===t?'selected':''}>${t||'— 無'}</option>`).join('')}
-        </select>
-      </td>
-      <td>
-        <input class="inline-text ${displayNote?'filled':''}" style="width:150px" type="text" value="${displayNote}" placeholder="備註"
-          onchange="updateProdAndPM('${p.vendor}','${p.id}','displayNote',this.value)">
-      </td>
+      <td style="text-align:right;font-family:var(--mono);color:var(--text2)">${p.moq||'—'}</td>
+      <td style="text-align:right;font-family:var(--mono);color:var(--text2)">${p.srp?p.srp.toLocaleString():'—'}</td>
+      <td style="text-align:right;font-family:var(--mono);color:var(--text2)">${p.priceTax?p.priceTax.toLocaleString():'—'}</td>
+      <td style="text-align:right;font-family:var(--mono);color:var(--text2)">${p.price?p.price.toLocaleString():'—'}</td>
+      <td><span style="font-size:0.85rem;font-weight:600;color:${STATUS_MAP[status]?.cls==='s-instock'?'var(--green)':STATUS_MAP[status]?.cls==='s-preorder'?'var(--accent)':STATUS_MAP[status]?.cls==='s-clearance'?'var(--amber)':STATUS_MAP[status]?.cls==='s-unavailable'?'var(--red)':'var(--text3)'}">${STATUS_MAP[status]?.l||'—'}</span></td>
+      <td style="font-size:0.88rem;color:${arrival?'var(--amber)':'var(--text3)'};font-weight:${arrival?600:400}">${arrival||'—'}</td>
+      <td style="font-size:0.85rem;color:${priceTag?'var(--red)':'var(--text3)'}">${priceTag||'—'}</td>
+      <td style="font-size:0.85rem;color:var(--text2);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${displayNote||'—'}</td>
       <td style="text-align:center">
         <button style="background:var(--accent-dim);border:1px solid #bfcffe;color:var(--accent);border-radius:6px;padding:4px 10px;font-family:var(--font);font-size:0.82rem;font-weight:700;cursor:pointer"
           onclick="openEditModal('${p.vendor}','${p.id}')">✏️</button>
@@ -486,11 +460,7 @@ function renderReorder(){
           value="${reorderQty||''}" placeholder="0"
           onchange="setPMField('${p.id}','reorderQty',parseInt(this.value)||0)">
       </td>
-      <td>
-        <select class="inline-select ${sCls}" onchange="updateProdAndPM('${p.vendor}','${p.id}','status',this.value)">
-          ${STATUS_OPTS.map(o=>`<option value="${o.v}" ${status===o.v?'selected':''}>${o.l}</option>`).join('')}
-        </select>
-      </td>
+      <td><span style="font-size:0.85rem;font-weight:600;color:${STATUS_MAP[status]?.cls==='s-instock'?'var(--green)':STATUS_MAP[status]?.cls==='s-preorder'?'var(--accent)':STATUS_MAP[status]?.cls==='s-clearance'?'var(--amber)':STATUS_MAP[status]?.cls==='s-unavailable'?'var(--red)':'var(--text3)'}">${STATUS_MAP[status]?.l||'—'}</span></td>
 
     </tr>`;
   }).join('');

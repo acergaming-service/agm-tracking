@@ -191,10 +191,7 @@ tr:hover td{background:var(--surface2)}
     </div>
 
     <!-- MOQ 不足警示區 -->
-    <div class="alert-section" id="moq-alert-section" style="display:none">
-      <h3>⚠️ MOQ 不足品項 — 需要通知業務加單</h3>
-      <div id="moq-alert-list"></div>
-    </div>
+
 
     <!-- 品項彙整表 -->
     <div class="toolbar">
@@ -205,7 +202,6 @@ tr:hover td{background:var(--surface2)}
       </select>
       <select class="filter-select" id="filter-moq" onchange="applyFilter()">
         <option value="">全部狀態</option>
-        <option value="below">⚠ MOQ 不足</option>
         <option value="ok">✅ MOQ 達標</option>
         <option value="over">🔴 超過上限</option>
         <option value="zero">— 無訂單</option>
@@ -443,7 +439,7 @@ window.addEventListener('DOMContentLoaded', async()=>{
       renderMainTable(allRows.filter(r=>r.total>0));
       renderDealerTable();
       renderStats();
-      renderMoqAlerts();
+      
     });
     document.getElementById('loading-screen').classList.add('hidden');
   }catch(err){
@@ -499,7 +495,6 @@ function buildRows(){
 function renderStats(){
   const withOrder=allRows.filter(r=>r.total>0);
   const qty=withOrder.reduce((s,r)=>s+r.total,0);
-  const moqLow=allRows.filter(r=>r.moqStatus==='below').length;
   const filled=Object.keys(dealers).filter(did=>Object.values(orders[did]||{}).some(o=>o?.qty>0)).length;
   document.getElementById('st-items').textContent=withOrder.length;
   document.getElementById('st-qty').textContent=qty.toLocaleString();
@@ -519,40 +514,6 @@ function renderStats(){
 }
 
 // ── MOQ 警示區 ────────────────────────────────────────────────────────────────
-function renderMoqAlerts(){
-  const below=allRows.filter(r=>r.moqStatus==='below');
-  const sec=document.getElementById('moq-alert-section');
-  if(!below.length){sec.style.display='none';return;}
-  sec.style.display='block';
-  const allDealerIds=Object.keys(dealers);
-  document.getElementById('moq-alert-list').innerHTML=below.map(({vendor,p,total,dealerQtys})=>{
-    const gap=(p.moq||0)-total;
-    // 哪些通路有下單、哪些沒下
-    const hasPills=Object.entries(dealerQtys).map(([did,qty])=>
-      `<span class="dp has-order">${dealers[did]?.name||did} ×${qty}</span>`).join('');
-    const noPills=allDealerIds.filter(did=>!dealerQtys[did]).slice(0,8).map(did=>
-      `<span class="dp no-order">${dealers[did]?.name||did}</span>`).join('');
-    const salesSet=[...new Set(Object.keys(dealerQtys).map(did=>dealers[did]?.sales).filter(Boolean))];
-    return `<div class="moq-alert-item">
-      <div class="moq-alert-header">
-        <span class="platform-tag ${p.platform}">${p.platform}</span>
-        <strong style="font-size:0.92rem">${p.name}</strong>
-        <span style="color:var(--text3);font-size:0.82rem">${vendor==='GS'?'GSE':vendor}</span>
-        <span class="moq-gap-big">缺 ${gap} 件</span>
-        <span style="font-size:0.82rem;color:var(--text2)">（已登記 ${total} / MOQ ${p.moq}）</span>
-      </div>
-      <div style="font-size:0.8rem;color:var(--text3);margin-bottom:6px;font-weight:600">已下單通路：</div>
-      <div class="dealer-pills" style="margin-bottom:8px">${hasPills||'<span style="color:var(--text3);font-size:0.82rem">無</span>'}</div>
-      <div style="font-size:0.8rem;color:var(--red);margin-bottom:4px;font-weight:600">尚未下單通路（前8個）：</div>
-      <div class="dealer-pills" style="margin-bottom:8px">${noPills}</div>
-      <button class="btn-notify-sales" onclick="showNotifyForProduct('${p.id}')">
-        📢 產生通知訊息
-      </button>
-    </div>`;
-  }).join('');
-}
-
-// ── 品項彙整表 ────────────────────────────────────────────────────────────────
 function renderMainTable(rows){
   document.getElementById('tbl-count').textContent=rows.length+' 品項';
   const allDealerIds=Object.keys(dealers);
@@ -655,10 +616,6 @@ function applyFilter(){
     return true;
   });
   renderMainTable(filtered);
-}
-function setMoqFilter(val){
-  document.getElementById('filter-moq').value=val;
-  applyFilter();
 }
 function clearFilters(){
   document.getElementById('filter-text').value='';
@@ -943,7 +900,7 @@ async function confirmArchive(){
     orders={}; winData={...winData,week:nextWeek,open:true};
     closeArchiveModal();
     buildRows(); renderMainTable(allRows.filter(r=>r.total>0));
-    renderDealerTable(); renderStats(); renderMoqAlerts();
+    renderDealerTable(); renderStats(); 
     showToast(`✅ ${week} 已歸檔，開始 ${nextWeek}`);
   }catch(e){showToast('歸檔失敗：'+e.message);}
 }
