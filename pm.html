@@ -434,20 +434,37 @@ function renderReorder(){
   }
 
   document.getElementById('ro-tbody').innerHTML=rows.map(p=>{
-    const pending=p._reorders.filter(r=>!r.arrival||!r.arrival.trim());
-    const hasPending=pending.length>0;
-    const status=(p._pm.status!==undefined?p._pm.status:p.status)||'';
-    const sCls=STATUS_MAP[status]?.cls||'s-empty';
+    const reorders=p._reorders||[];
+    const pending=reorders.filter(r=>!r.arrival||!r.arrival.trim());
+    const confirmed=reorders.filter(r=>r.arrival&&r.arrival.trim());
+    const pmNote=p._pm.reorderNote||'';
+    const pmException=p._pm.reorderException||''; // ''|'partial'|'discontinued'|'cancelled'
 
-    // 時間軸顯示
-    const timeline=p._reorders.slice().reverse().map((r,i)=>{
-      const idx=p._reorders.length-1-i;
+    // 自動判斷追加狀態
+    let reorderStatus, reorderColor, reorderBg, reorderBorder;
+    if(pmException==='discontinued'){
+      reorderStatus='停產／無法追加'; reorderColor='var(--red)';
+      reorderBg='var(--red-dim)'; reorderBorder='var(--red-b)';
+    } else if(pending.length===0){
+      reorderStatus='全部確認'; reorderColor='var(--green)';
+      reorderBg='var(--green-dim)'; reorderBorder='var(--green-b)';
+    } else if(confirmed.length>0){
+      reorderStatus='部分確認'; reorderColor='var(--amber)';
+      reorderBg='var(--amber-dim)'; reorderBorder='var(--amber-b)';
+    } else {
+      reorderStatus='追加中'; reorderColor='var(--accent)';
+      reorderBg='var(--accent-dim)'; reorderBorder='#bfcffe';
+    }
+
+    // 時間軸
+    const timeline=reorders.slice().reverse().map((r,i)=>{
+      const idx=reorders.length-1-i;
       const hasArrival=r.arrival&&r.arrival.trim();
-      return `<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:8px;background:${hasArrival?'var(--green-dim)':'var(--amber-dim)'};border:1px solid ${hasArrival?'var(--green-b)':'var(--amber-b)'};margin-bottom:6px">
+      return `<div style="display:flex;align-items:center;gap:12px;padding:7px 10px;border-radius:7px;background:${hasArrival?'var(--green-dim)':'var(--surface2)'};border:1px solid ${hasArrival?'var(--green-b)':'var(--border)'};margin-bottom:5px">
         <span style="font-size:0.72rem;font-weight:700;color:var(--text3);min-width:24px">第${idx+1}次</span>
         <span style="font-size:0.72rem;color:var(--text3)">${r.createdAt||''}</span>
         <span style="font-family:var(--mono);font-weight:700;color:var(--accent)">追加 ${r.qty} 件</span>
-        <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+        <div style="margin-left:auto">
           ${hasArrival
             ?`<span style="font-size:0.85rem;font-weight:600;color:var(--green)">✅ ${r.arrival}</span>`
             :`<input type="text" placeholder="填入到貨日" value=""
@@ -464,15 +481,18 @@ function renderReorder(){
         <div style="font-weight:600;font-size:0.9rem">${p.name}</div>
         <div style="font-size:0.72rem;color:var(--text3);font-family:var(--mono);margin-top:2px">${p.pn&&p.pn!=='—'?p.pn:''}</div>
       </td>
-      <td>
-        <select class="inline-select ${sCls}" onchange="updateProdAndPM('${p.vendor}','${p.id}','status',this.value)">
-          ${STATUS_OPTS.map(o=>`<option value="${o.v}" ${status===o.v?'selected':''}>${o.l}</option>`).join('')}
+      <td style="padding:8px 12px">${timeline}</td>
+      <td style="text-align:center;padding:8px">
+        <div style="font-size:0.85rem;font-weight:700;color:${reorderColor};background:${reorderBg};border:1px solid ${reorderBorder};border-radius:8px;padding:5px 12px;margin-bottom:8px">${reorderStatus}</div>
+        <select style="width:100%;font-family:var(--font);font-size:0.82rem;border:2px solid var(--border);border-radius:6px;padding:4px 6px;outline:none;margin-bottom:8px"
+          onchange="setReorderException('${p.id}',this.value)">
+          <option value="" ${pmException===''?'selected':''}>— 正常追加</option>
+          <option value="partial" ${pmException==='partial'?'selected':''}>⚠️ 追加不足</option>
+          <option value="discontinued" ${pmException==='discontinued'?'selected':''}>🔴 停產無法追加</option>
         </select>
-      </td>
-      <td style="padding:8px 12px;min-width:320px">${timeline}</td>
-      <td style="text-align:center">
-        ${hasPending?`<span style="font-size:0.8rem;font-weight:700;color:var(--amber);background:var(--amber-dim);border:1px solid var(--amber-b);border-radius:6px;padding:3px 10px">待填 ${pending.length} 筆</span>`
-          :`<span style="font-size:0.8rem;color:var(--green)">✅ 全部完成</span>`}
+        <textarea placeholder="備註（供後勤業務參考）" rows="2"
+          style="width:100%;font-family:var(--font);font-size:0.82rem;border:2px solid var(--border);border-radius:6px;padding:5px 8px;outline:none;resize:none"
+          onchange="setReorderNote('${p.id}',this.value)">${pmNote}</textarea>
       </td>
     </tr>`;
   }).join('');
@@ -491,6 +511,20 @@ async function fillArrival(pid, idx, arrival){
   pmData[pid].reorders=reorders;
   pmData[pid].arrival=latestArrival;
   renderReorder(); showToast('✅ 到貨日已填入');
+}
+
+async function setReorderException(pid, val){
+  if(!pmData[pid]) pmData[pid]={};
+  pmData[pid].reorderException=val;
+  fbDB.ref(`pmData/${pid}/reorderException`).set(val);
+  renderReorder(); showToast('已更新');
+}
+
+async function setReorderNote(pid, val){
+  if(!pmData[pid]) pmData[pid]={};
+  pmData[pid].reorderNote=val;
+  fbDB.ref(`pmData/${pid}/reorderNote`).set(val);
+  showToast('備註已儲存');
 }
 
 
