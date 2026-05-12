@@ -409,37 +409,54 @@ function renderProducts(){
   }).join('');
 }
 
-// ── 追加下單 ────────────────────────────────────────────────────────────────
+// ── 追加下單 ─────────────────────────────────────────────────────────────
 function renderReorder(){
   const vendor=document.getElementById('ro-vendor')?.value||'';
   const search=(document.getElementById('ro-search')?.value||'').toLowerCase();
+
   let rows=[];
   Object.entries(products).forEach(([v,ps])=>{
     if(vendor&&v!==vendor) return;
     Object.values(ps).forEach(p=>{
-      if(search&&!p.name.toLowerCase().includes(search)&&!(p.barcode||'').includes(search)&&!(p.pn||'').toLowerCase().includes(search.toLowerCase())&&!(p.spec||'').toLowerCase().includes(search.toLowerCase())) return;
+      if(search&&!p.name.toLowerCase().includes(search)&&!(p.pn||'').toLowerCase().includes(search)) return;
       const pm=pmData[p.id]||{};
-      if(!pm.vendorOrdered) return;
-      rows.push({vendor:v,...p,_pm:pm});
+      const reorders=pm.reorders||[];
+      if(!reorders.length) return;
+      rows.push({vendor:v,...p,_pm:pm,_reorders:reorders});
     });
   });
-  document.getElementById('ro-count').textContent=rows.length+' 項等待追加';
+  document.getElementById('ro-count').textContent=rows.length+' 個品項有追加記錄';
 
   if(!rows.length){
-    document.getElementById('ro-tbody').innerHTML=`<tr><td colspan="8" style="padding:2rem;text-align:center;color:var(--text3)">
-      目前無追加下單需求<br><small>後勤填入追加量後，品項會出現在這裡</small>
+    document.getElementById('ro-tbody').innerHTML=`<tr><td colspan="6" style="padding:2.5rem;text-align:center;color:var(--text3)">
+      目前無追加記錄<br><small style="margin-top:4px;display:block">後勤在統計總覽展開列新增追加後，品項會出現在這裡</small>
     </td></tr>`;
     return;
   }
 
-  const statusOpts=STATUS_OPTS.map(o=>`<option value="${o.v}">${o.l}</option>`).join('');
   document.getElementById('ro-tbody').innerHTML=rows.map(p=>{
-    const pm=p._pm;
-    const status=(pm.status!==undefined?pm.status:p.status)||'';
-    const total=getTotalOrders(p.id);
+    const pending=p._reorders.filter(r=>!r.arrival||!r.arrival.trim());
+    const hasPending=pending.length>0;
+    const status=(p._pm.status!==undefined?p._pm.status:p.status)||'';
     const sCls=STATUS_MAP[status]?.cls||'s-empty';
-    const reorderArrival=pm.reorderArrival||'';
-    const reorderQty=pm.reorderQty||0;
+
+    // 時間軸顯示
+    const timeline=p._reorders.slice().reverse().map((r,i)=>{
+      const idx=p._reorders.length-1-i;
+      const hasArrival=r.arrival&&r.arrival.trim();
+      return `<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:8px;background:${hasArrival?'var(--green-dim)':'var(--amber-dim)'};border:1px solid ${hasArrival?'var(--green-b)':'var(--amber-b)'};margin-bottom:6px">
+        <span style="font-size:0.72rem;font-weight:700;color:var(--text3);min-width:24px">第${idx+1}次</span>
+        <span style="font-size:0.72rem;color:var(--text3)">${r.createdAt||''}</span>
+        <span style="font-family:var(--mono);font-weight:700;color:var(--accent)">追加 ${r.qty} 件</span>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+          ${hasArrival
+            ?`<span style="font-size:0.85rem;font-weight:600;color:var(--green)">✅ ${r.arrival}</span>`
+            :`<input type="text" placeholder="填入到貨日" value=""
+                style="border:2px solid var(--amber-b);border-radius:6px;padding:4px 8px;font-family:var(--font);font-size:0.85rem;outline:none;width:130px;background:var(--amber-dim)"
+                onchange="fillArrival('${p.id}',${idx},this.value)">`}
+        </div>
+      </div>`;
+    }).join('');
 
     return `<tr>
       <td style="font-size:0.78rem;font-weight:700;color:var(--text2)">${p.vendor==='GS'?'GSE':p.vendor}</td>
@@ -448,23 +465,35 @@ function renderReorder(){
         <div style="font-weight:600;font-size:0.9rem">${p.name}</div>
         <div style="font-size:0.72rem;color:var(--text3);font-family:var(--mono);margin-top:2px">${p.pn&&p.pn!=='—'?p.pn:''}</div>
       </td>
-      <td style="text-align:right;font-family:var(--mono);font-weight:700;color:var(--accent)">${total}</td>
-      <td style="text-align:right"><span class="reorder-badge">追加 ${pm.vendorOrdered}</span></td>
       <td>
-        <input class="inline-text ${reorderArrival?'filled':''}" style="width:140px" type="text"
-          value="${reorderArrival}" placeholder="追加到貨日"
-          onchange="setPMField('${p.id}','reorderArrival',this.value)">
+        <select class="inline-select ${sCls}" onchange="updateProdAndPM('${p.vendor}','${p.id}','status',this.value)">
+          ${STATUS_OPTS.map(o=>`<option value="${o.v}" ${status===o.v?'selected':''}>${o.l}</option>`).join('')}
+        </select>
       </td>
-      <td style="text-align:right">
-        <input class="inline-num ${reorderQty?'filled':''}" type="number" min="0"
-          value="${reorderQty||''}" placeholder="0"
-          onchange="setPMField('${p.id}','reorderQty',parseInt(this.value)||0)">
+      <td style="padding:8px 12px;min-width:320px">${timeline}</td>
+      <td style="text-align:center">
+        ${hasPending?`<span style="font-size:0.8rem;font-weight:700;color:var(--amber);background:var(--amber-dim);border:1px solid var(--amber-b);border-radius:6px;padding:3px 10px">待填 ${pending.length} 筆</span>`
+          :`<span style="font-size:0.8rem;color:var(--green)">✅ 全部完成</span>`}
       </td>
-      <td><span style="font-size:0.85rem;font-weight:600;color:${STATUS_MAP[status]?.cls==='s-instock'?'var(--green)':STATUS_MAP[status]?.cls==='s-preorder'?'var(--accent)':STATUS_MAP[status]?.cls==='s-clearance'?'var(--amber)':STATUS_MAP[status]?.cls==='s-unavailable'?'var(--red)':'var(--text3)'}">${STATUS_MAP[status]?.l||'—'}</span></td>
-
     </tr>`;
   }).join('');
 }
+
+async function fillArrival(pid, idx, arrival){
+  if(!arrival.trim()) return;
+  if(!pmData[pid]) pmData[pid]={};
+  const reorders=pmData[pid].reorders||[];
+  if(!reorders[idx]) return;
+  reorders[idx].arrival=arrival.trim();
+  // 同步更新 pmData.arrival 為最新一筆有到貨日的記錄
+  const latestArrival=[...reorders].reverse().find(r=>r.arrival&&r.arrival.trim())?.arrival||'';
+  await fbDB.ref(`pmData/${pid}/reorders`).set(reorders);
+  if(latestArrival) await fbDB.ref(`pmData/${pid}/arrival`).set(latestArrival);
+  pmData[pid].reorders=reorders;
+  pmData[pid].arrival=latestArrival;
+  renderReorder(); showToast('✅ 到貨日已填入');
+}
+
 
 // ── 新增追加批次 Modal ────────────────────────────────────────────────────
 let _reorderPid='', _reorderName='';
