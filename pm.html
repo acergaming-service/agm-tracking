@@ -178,6 +178,7 @@ tr:hover td{background:var(--surface2)}
         <th style="width:110px">貨物狀態</th>
         <th style="width:130px">到貨日 / 發售日</th>
         <th style="width:110px">促銷標籤</th>
+        <th style="width:140px">備註</th>
         <th style="width:45px;text-align:center">編輯</th>
       </tr></thead><tbody id="prod-tbody"></tbody></table>
     </div>
@@ -398,7 +399,7 @@ function renderProducts(){
       <td><span style="font-size:0.85rem;font-weight:600;color:${STATUS_MAP[status]?.cls==='s-instock'?'var(--green)':STATUS_MAP[status]?.cls==='s-preorder'?'var(--accent)':STATUS_MAP[status]?.cls==='s-clearance'?'var(--amber)':STATUS_MAP[status]?.cls==='s-unavailable'?'var(--red)':'var(--text3)'}">${STATUS_MAP[status]?.l||'—'}</span></td>
       <td style="font-size:0.88rem;color:${arrival?'var(--amber)':'var(--text3)'};font-weight:${arrival?600:400}">${arrival||'—'}</td>
       <td style="font-size:0.85rem;color:${priceTag?'var(--red)':'var(--text3)'}">${priceTag||'—'}</td>
-      <td style="font-size:0.85rem;color:var(--text2);max-width:160px">${displayNote||'—'}</td>
+      <td style="font-size:0.85rem;color:var(--text2);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${displayNote}">${displayNote||'—'}</td>
       <td style="text-align:center">
         <button style="background:var(--accent-dim);border:1px solid #bfcffe;color:var(--accent);border-radius:6px;padding:4px 10px;font-family:var(--font);font-size:0.82rem;font-weight:700;cursor:pointer"
           onclick="openEditModal('${p.vendor}','${p.id}')">✏️</button>
