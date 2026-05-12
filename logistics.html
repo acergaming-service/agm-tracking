@@ -572,7 +572,7 @@ function renderMainTable(rows){
     const showPills=orderedDealers.slice(0,5).map(([did,qty])=>`<span class="dp has-order">${dealers[did]?.name||did} ×${qty}</span>`).join('');
     const morePills=orderedDealers.length>5?`<span style="font-size:0.78rem;color:var(--accent);cursor:pointer;font-weight:600" onclick="event.stopPropagation();toggleExpand('${p.id}')">+${orderedDealers.length-5} 更多▾</span>`:'';
     const noneCount=allDealerIds.filter(did=>!dealerQtys[did]).length;
-    const moqWarn=p.moq>0&&total>0&&total<p.moq;
+    const moqWarn=false; // MOQ 僅為參照，不做警示
     const rowId='row-'+p.id;
 
     // 展開列（供貨記錄）
@@ -631,10 +631,7 @@ function renderMainTable(rows){
         <div style="font-family:var(--mono);font-size:0.72rem;color:var(--text3);margin-top:2px">${p.pn}</div>
       </td>
       <td style="text-align:right;font-family:var(--mono);color:var(--text3)">${p.moq||'—'}</td>
-      <td style="text-align:right;font-family:var(--mono);font-weight:700;color:${total>0?'var(--green)':'var(--text3)'}">
-        ${total||'—'}
-        ${moqWarn?`<div style="font-size:0.7rem;font-weight:400;color:var(--amber)">未達MOQ</div>`:''}
-      </td>
+      <td style="text-align:right;font-family:var(--mono);font-weight:700;color:${total>0?'var(--green)':'var(--text3)'}">${total||'—'}</td>
       <td style="font-size:0.85rem;font-weight:600;color:${STATUS_COLOR[pStatus]||'var(--text3)'}">
         ${STATUS_LABEL[pStatus]||'—'}
       </td>
