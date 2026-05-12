@@ -294,7 +294,6 @@ tr:hover td{background:var(--surface2)}
         <th style="width:120px">到貨日</th>
         <th style="width:115px">貨物狀態</th>
         <th style="width:80px;text-align:right">現庫存</th>
-        <th style="width:85px;text-align:right">本週追加</th>
       </tr></thead><tbody id="cat-tbody"></tbody></table>
     </div>
   </div>
@@ -1012,7 +1011,6 @@ function renderCatalog(){
           style="width:70px;text-align:right;font-family:var(--mono);font-size:0.85rem;border:2px solid ${stock>0?'var(--green-b)':'var(--border)'};border-radius:6px;padding:3px 6px;outline:none;background:${stock>0?'var(--green-dim)':'#fff'}"
           onchange="updateStock('${p.id}','${vendor}',parseInt(this.value)||0,this)">
       </td>
-      <td style="text-align:right;font-family:var(--mono);color:${ordered>0?'var(--accent)':'var(--text3)'}">${ordered||'—'}</td>
     </tr>`;
   }).join('');
 }
